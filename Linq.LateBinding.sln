@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linq.LateBinding", "Linq.LateBinding\Linq.LateBinding.csproj", "{06F9743D-D07E-4D5F-8414-62CDAF7F8788}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{06F9743D-D07E-4D5F-8414-62CDAF7F8788}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06F9743D-D07E-4D5F-8414-62CDAF7F8788}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06F9743D-D07E-4D5F-8414-62CDAF7F8788}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06F9743D-D07E-4D5F-8414-62CDAF7F8788}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {16BBB230-139D-4AB6-837E-3B0F729E6308}
+	EndGlobalSection
+EndGlobal
