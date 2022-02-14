@@ -16,7 +16,7 @@ namespace MrHotkeys.Linq.LateBinding
         private ModuleBuilder DtoModuleBuilder { get; }
 
         public DtoTypeGenerator()
-            : this($"StitchEF DTO Assembly ({Guid.NewGuid()})")
+            : this($"Linq.LateBinding DTO Assembly ({Guid.NewGuid()})")
         { }
 
         public DtoTypeGenerator(string assemblyName)
