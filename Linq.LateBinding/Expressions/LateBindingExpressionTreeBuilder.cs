@@ -7,8 +7,12 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public sealed class LateBindingExpressionTreeBuilder
     {
-        public LateBindingExpressionTreeBuilder()
-        { }
+        private CalculateExpressionManager CalculateExpressionManager { get; }
+
+        public LateBindingExpressionTreeBuilder(CalculateExpressionManager calculateExpressionManager)
+        {
+            CalculateExpressionManager = calculateExpressionManager ?? throw new ArgumentNullException(nameof(calculateExpressionManager));
+        }
 
         public Expression Build(Expression targetExpr, ILateBindingExpression lateBinding)
         {
@@ -28,7 +32,6 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 default:
                     throw new InvalidOperationException();
             }
-
         }
 
         private Expression BuildConstantExpression(Expression targetExpr, ConstantLateBindingExpression constantLateBinding)
@@ -49,34 +52,12 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
         private Expression BuildCalculateExpression(Expression targetExpr, CalculateLateBindingExpression calculateLateBinding)
         {
-            switch (calculateLateBinding.Method.ToLower())
-            {
-                case "clamp":
-                    {
-                        if (calculateLateBinding.Expressions.Length != 3)
-                            throw new InvalidOperationException();
+            var expressions = calculateLateBinding
+                .Expressions
+                .Select(lbe => Build(targetExpr, lbe))
+                .ToArray();
 
-                        var valExpr = Build(targetExpr, calculateLateBinding.Expressions[0]);
-                        var minExpr = Expression.Convert(Build(targetExpr, calculateLateBinding.Expressions[1]), valExpr.Type);
-                        var maxExpr = Expression.Convert(Build(targetExpr, calculateLateBinding.Expressions[2]), valExpr.Type);
-
-                        var clampMethod = typeof(Math)
-                            .GetMethods()
-                            .Where(m =>
-                            {
-                                if (m.Name != nameof(Math.Clamp))
-                                    return false;
-
-                                var parameters = m.GetParameters();
-                                return parameters.Length == 3 && parameters.All(p => p.ParameterType == valExpr.Type);
-                            })
-                            .Single();
-
-                        return Expression.Call(clampMethod, valExpr, minExpr, maxExpr);
-                    }
-                default:
-                    throw new NotImplementedException();
-            }
+            return CalculateExpressionManager.Build(calculateLateBinding.Method, expressions);
         }
     }
 }
