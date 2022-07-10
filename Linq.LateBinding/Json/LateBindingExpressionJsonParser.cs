@@ -2,7 +2,9 @@ using System;
 using System.Linq;
 using System.Text.Json;
 
-namespace MrHotkeys.Linq.LateBinding.Expressions
+using MrHotkeys.Linq.LateBinding.Expressions;
+
+namespace MrHotkeys.Linq.LateBinding.Json
 {
     public sealed class LateBindingExpressionJsonParser
     {
