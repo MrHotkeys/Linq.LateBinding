@@ -6,7 +6,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public sealed class CalculateLateBindingExpression : ILateBindingExpression
     {
-        public LateBindingExpressionType Type => LateBindingExpressionType.Constant;
+        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Constant;
 
         public string Method { get; }
 

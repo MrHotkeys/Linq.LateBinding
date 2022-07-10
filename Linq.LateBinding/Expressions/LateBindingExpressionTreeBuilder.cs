@@ -6,13 +6,13 @@ using System.Reflection;
 
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
-    public sealed class LateBindingExpressionTreeBuilder
+    public sealed class LateBindingExpressionTreeBuilder : ILateBindingExpressionTreeBuilder
     {
         private Dictionary<MemberInfo, MemberOverrideDefinition> MemberOverrides { get; set; } = new Dictionary<MemberInfo, MemberOverrideDefinition>();
 
-        private CalculateExpressionManager CalculateExpressionManager { get; }
+        private ICalculateExpressionManager CalculateExpressionManager { get; }
 
-        public LateBindingExpressionTreeBuilder(CalculateExpressionManager calculateExpressionManager)
+        public LateBindingExpressionTreeBuilder(ICalculateExpressionManager calculateExpressionManager)
         {
             CalculateExpressionManager = calculateExpressionManager ?? throw new ArgumentNullException(nameof(calculateExpressionManager));
         }

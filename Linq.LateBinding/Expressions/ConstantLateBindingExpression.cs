@@ -2,7 +2,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public sealed class ConstantLateBindingExpression : ILateBindingExpression
     {
-        public LateBindingExpressionType Type => LateBindingExpressionType.Constant;
+        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Constant;
 
         public object? Value { get; }
 

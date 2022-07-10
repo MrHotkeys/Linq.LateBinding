@@ -30,6 +30,32 @@ namespace MrHotkeys.Linq.LateBinding
             DtoModuleBuilder = DtoAssemblyBuilder.DefineDynamicModule("StitchEF DTO Module");
         }
 
+        public Type Generate(IEnumerable<DtoPropertyDefinition> propertyDefinitions)
+        {
+            if (propertyDefinitions is null)
+                throw new ArgumentNullException(nameof(propertyDefinitions));
+
+            var dtoTypeBuilder = DtoModuleBuilder.DefineType(
+                name: $"DTO ({Guid.NewGuid()})",
+                attr: TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed);
+
+            BuildNoParamConstructor(dtoTypeBuilder);
+
+            var targetPropertiesBuilt = new HashSet<string>();
+            foreach (var propertyDefinition in propertyDefinitions)
+            {
+                if (string.IsNullOrWhiteSpace(propertyDefinition.Name))
+                    throw new ArgumentException("Cannot contain null or empty keys!", nameof(propertyDefinitions));
+
+                if (!targetPropertiesBuilt.Add(propertyDefinition.Name))
+                    throw new ArgumentException($"Contains duplicate property name \"{propertyDefinition.Name}\"!", nameof(propertyDefinitions));
+
+                var property = BuildProperty(propertyDefinition.Name, propertyDefinition.Type, dtoTypeBuilder);
+            }
+
+            return dtoTypeBuilder.CreateType()!;
+        }
+
         public Type Generate<TSource, TDto>(ICollection<string> propertyNames)
         {
             if (propertyNames is null)
@@ -94,7 +120,7 @@ namespace MrHotkeys.Linq.LateBinding
             return dtoTypeBuilder.CreateType()!;
         }
 
-        private void BuildNoParamConstructor(TypeBuilder dtoTypeBuilder)
+        private ConstructorBuilder BuildNoParamConstructor(TypeBuilder dtoTypeBuilder)
         {
             var dtoConstructorBuilder = dtoTypeBuilder.DefineConstructor(
                 attributes: MethodAttributes.Public,
@@ -102,6 +128,8 @@ namespace MrHotkeys.Linq.LateBinding
                 parameterTypes: Type.EmptyTypes);
 
             EmitNoParamConstructorIL(dtoConstructorBuilder.GetILGenerator());
+
+            return dtoConstructorBuilder;
         }
 
         private void EmitNoParamConstructorIL(ILGenerator il)
@@ -156,6 +184,81 @@ namespace MrHotkeys.Linq.LateBinding
             il.Emit(OpCodes.Ret);
         }
 
+        private PropertyInfo BuildProperty(string name, Type type, TypeBuilder dtoTypeBuilder)
+        {
+            var backingFieldBuilder = dtoTypeBuilder.DefineField(
+                    fieldName: $"<{name}>k__BackingField",
+                    type: type,
+                    attributes: FieldAttributes.Private);
+
+            var propertyBuilder = dtoTypeBuilder.DefineProperty(
+                name: name,
+                attributes: PropertyAttributes.None,
+                returnType: type,
+                parameterTypes: Type.EmptyTypes);
+
+            // Getters and setters are always implemented on the actual DTO type
+            BuildGetter(name, type, dtoTypeBuilder, backingFieldBuilder, propertyBuilder);
+            BuildSetter(name, type, dtoTypeBuilder, backingFieldBuilder, propertyBuilder);
+
+            return propertyBuilder;
+        }
+
+        private void BuildGetter(string name, Type type, TypeBuilder dtoTypeBuilder,
+            FieldBuilder backingFieldBuilder, PropertyBuilder propertyBuilder)
+        {
+            var getterBuilder = dtoTypeBuilder.DefineMethod(
+                name: $"get_{propertyBuilder.Name}",
+                attributes: MethodAttributes.Public | MethodAttributes.Virtual,
+                returnType: type,
+                parameterTypes: Type.EmptyTypes);
+
+            EmitPropertyGetterIL(getterBuilder.GetILGenerator(), backingFieldBuilder);
+
+            propertyBuilder.SetGetMethod(getterBuilder);
+        }
+
+        private void EmitPropertyGetterIL(ILGenerator il, FieldInfo backingField)
+        {
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldfld, backingField);
+            il.Emit(OpCodes.Ret);
+        }
+
+        private void BuildSetter(string name, Type type, TypeBuilder dtoTypeBuilder,
+            FieldBuilder backingFieldBuilder, PropertyBuilder propertyBuilder)
+        {
+            var setterBuilder = dtoTypeBuilder.DefineMethod(
+                name: $"set_{propertyBuilder.Name}",
+                attributes: MethodAttributes.Public | MethodAttributes.Virtual,
+                returnType: null,
+                parameterTypes: new[] { type });
+
+            EmitPropertySetterIL(setterBuilder.GetILGenerator(), backingFieldBuilder);
+
+            propertyBuilder.SetSetMethod(setterBuilder);
+        }
+
+        private void EmitPropertySetterIL(ILGenerator il, FieldInfo backingField)
+        {
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Stfld, backingField);
+            il.Emit(OpCodes.Ret);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
         private void BuildProperty(PropertyInfo sourceProperty, PropertyInfo targetProperty, TypeBuilder dtoTypeBuilder, ILGenerator dtoConstructorBuilderIL)
         {
             var backingFieldBuilder = dtoTypeBuilder.DefineField(
@@ -196,12 +299,12 @@ namespace MrHotkeys.Linq.LateBinding
                 dtoTypeBuilder.DefineMethodOverride(getterBuilder, targetProperty.GetMethod);
         }
 
-        private void EmitPropertyGetterIL(ILGenerator il, FieldInfo backingField)
-        {
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, backingField);
-            il.Emit(OpCodes.Ret);
-        }
+        // private void EmitPropertyGetterIL(ILGenerator il, FieldInfo backingField)
+        // {
+        //     il.Emit(OpCodes.Ldarg_0);
+        //     il.Emit(OpCodes.Ldfld, backingField);
+        //     il.Emit(OpCodes.Ret);
+        // }
 
         private void BuildSetter(PropertyInfo targetProperty, TypeBuilder dtoTypeBuilder,
             FieldBuilder backingFieldBuilder, PropertyBuilder propertyBuilder)
@@ -222,13 +325,13 @@ namespace MrHotkeys.Linq.LateBinding
                 dtoTypeBuilder.DefineMethodOverride(setterBuilder, targetProperty.SetMethod);
         }
 
-        private void EmitPropertySetterIL(ILGenerator il, FieldInfo backingField)
-        {
-            il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldarg_1);
-            il.Emit(OpCodes.Stfld, backingField);
-            il.Emit(OpCodes.Ret);
-        }
+        // private void EmitPropertySetterIL(ILGenerator il, FieldInfo backingField)
+        // {
+        //     il.Emit(OpCodes.Ldarg_0);
+        //     il.Emit(OpCodes.Ldarg_1);
+        //     il.Emit(OpCodes.Stfld, backingField);
+        //     il.Emit(OpCodes.Ret);
+        // }
 
         private void BuildPropertyStub(PropertyInfo targetProperty, TypeBuilder dtoTypeBuilder)
         {

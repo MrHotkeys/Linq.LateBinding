@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
-    public sealed class CalculateExpressionManager
+    public sealed class CalculateExpressionManager : ICalculateExpressionManager
     {
         private Dictionary<string, List<CalculateExpressionBuilder>> Builders =
             new Dictionary<string, List<CalculateExpressionBuilder>>(StringComparer.OrdinalIgnoreCase);

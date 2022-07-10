@@ -5,6 +5,8 @@ namespace MrHotkeys.Linq.LateBinding
 {
     public interface IDtoTypeGenerator
     {
-        Type Generate<TSource, TDto>(ICollection<string> propertyNames);
+        public Type Generate(IEnumerable<DtoPropertyDefinition> propertyDefintions);
+
+        public Type Generate<TSource, TDto>(ICollection<string> propertyNames);
     }
 }

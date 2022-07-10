@@ -2,7 +2,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public sealed class FieldLateBindingExpression : ILateBindingExpression
     {
-        public LateBindingExpressionType Type => LateBindingExpressionType.Field;
+        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Field;
 
         public string Field { get; }
 

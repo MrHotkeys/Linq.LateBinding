@@ -1,7 +1,9 @@
+using System;
+
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public interface ILateBindingExpression
     {
-        public LateBindingExpressionType Type { get; }
+        public LateBindingExpressionType ExpressionType { get; }
     }
 }
