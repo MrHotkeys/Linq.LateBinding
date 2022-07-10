@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
@@ -163,25 +162,6 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
             public override string ToString() =>
                 $"{Method}({string.Join(", ", ParameterTypes.Select(t => t.Name))})";
-        }
-
-        private sealed class ParameterExpressionReplaceVisitor : ExpressionVisitor
-        {
-            private Dictionary<ParameterExpression, Expression> Replacements { get; } = new Dictionary<ParameterExpression, Expression>();
-            public ParameterExpressionReplaceVisitor()
-            { }
-
-            public void Add(ParameterExpression parameterExpr, Expression replacementExpr)
-            {
-                Replacements.Add(parameterExpr, replacementExpr);
-            }
-
-            protected override Expression VisitParameter(ParameterExpression node)
-            {
-                return Replacements.TryGetValue(node, out var replacementExpr) ?
-                    replacementExpr :
-                    base.VisitParameter(node);
-            }
         }
     }
 }
