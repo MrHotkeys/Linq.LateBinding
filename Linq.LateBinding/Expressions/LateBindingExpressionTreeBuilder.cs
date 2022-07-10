@@ -41,13 +41,22 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
         private Expression BuildFieldExpression(Expression targetExpr, FieldLateBindingExpression fieldLateBinding)
         {
-            var property = targetExpr
-                .Type
-                .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(p => StringComparer.OrdinalIgnoreCase.Equals(p.Name, fieldLateBinding.Field))
-                .Single();
+            var split = fieldLateBinding
+                .Field
+                .Split(".");
+            var currentExpr = targetExpr;
+            foreach (var field in split)
+            {
+                var property = currentExpr
+                    .Type
+                    .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(p => StringComparer.OrdinalIgnoreCase.Equals(p.Name, field))
+                    .Single();
 
-            return Expression.MakeMemberAccess(targetExpr, property);
+                currentExpr = Expression.MakeMemberAccess(currentExpr, property);
+            }
+
+            return currentExpr;
         }
 
         private Expression BuildCalculateExpression(Expression targetExpr, CalculateLateBindingExpression calculateLateBinding)
