@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
@@ -11,8 +12,95 @@ namespace MrHotkeys.Linq.LateBinding.Json
         public LateBindingExpressionJsonParser()
         { }
 
-        public ILateBindingExpression Parse(JsonElement json)
+        public JsonQuery ParseQuery(JsonElement json)
         {
+            if (json.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException();
+
+            var query = new JsonQuery();
+
+            if (json.TryGetProperty("select", StringComparer.OrdinalIgnoreCase, out var selectJson))
+                query.Select = ParseQuerySelect(selectJson);
+            if (json.TryGetProperty("where", StringComparer.OrdinalIgnoreCase, out var whereJson))
+                query.Where = ParseQueryWhere(whereJson);
+            if (json.TryGetProperty("orderBy", StringComparer.OrdinalIgnoreCase, out var orderByJson))
+                query.OrderBy = ParseQueryOrderBy(orderByJson);
+            if (json.TryGetProperty("skip", StringComparer.OrdinalIgnoreCase, out var skipJson))
+                query.Skip = ParseQuerySkipTake(skipJson);
+            if (json.TryGetProperty("take", StringComparer.OrdinalIgnoreCase, out var takeJson))
+                query.Take = ParseQuerySkipTake(skipJson);
+
+            return query;
+        }
+
+        public Dictionary<string, ILateBindingExpression>? ParseQuerySelect(JsonElement selectJson)
+        {
+            if (selectJson.ValueKind == JsonValueKind.Null)
+                return null;
+
+            if (selectJson.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException();
+
+            var select = new Dictionary<string, ILateBindingExpression>();
+            foreach (var property in selectJson.EnumerateObject())
+            {
+                select[property.Name] = ParseExpression(property.Value);
+            }
+
+            return select;
+        }
+
+        public List<ILateBindingExpression>? ParseQueryWhere(JsonElement whereJson)
+        {
+            if (whereJson.ValueKind == JsonValueKind.Null)
+                return null;
+
+            if (whereJson.ValueKind != JsonValueKind.Array)
+                throw new ArgumentException();
+
+            var where = new List<ILateBindingExpression>();
+            foreach (var itemJson in whereJson.EnumerateArray())
+            {
+                var expression = ParseExpression(itemJson);
+                where.Add(expression);
+            }
+
+            return where;
+        }
+
+        public List<LateBindingOrderBy>? ParseQueryOrderBy(JsonElement orderByJson)
+        {
+            if (orderByJson.ValueKind == JsonValueKind.Null)
+                return null;
+
+            if (orderByJson.ValueKind != JsonValueKind.Array)
+                throw new ArgumentException();
+
+            var orderBys = new List<LateBindingOrderBy>();
+            foreach (var itemJson in orderByJson.EnumerateArray())
+            {
+                var orderBy = ParseOrderBy(itemJson);
+                orderBys.Add(orderBy);
+            }
+
+            return orderBys;
+        }
+
+        public int? ParseQuerySkipTake(JsonElement json)
+        {
+            if (json.ValueKind == JsonValueKind.Null)
+                return null;
+
+            if (json.ValueKind != JsonValueKind.Number)
+                throw new ArgumentException();
+
+            return json.GetInt32();
+        }
+
+        public ILateBindingExpression ParseExpression(JsonElement json)
+        {
+            if (json.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException();
             if (!json.TryGetProperty("type", StringComparer.OrdinalIgnoreCase, out var typeElement))
                 throw new ArgumentException();
             if (typeElement.ValueKind != JsonValueKind.String)
@@ -75,9 +163,33 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 throw new ArgumentException();
             var args = argsElement
                 .EnumerateArray()
-                .Select(Parse);
+                .Select(ParseExpression);
 
             return new CalculateLateBindingExpression(method, args);
+        }
+
+        public LateBindingOrderBy ParseOrderBy(JsonElement orderByJson)
+        {
+            if (orderByJson.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException();
+            if (!orderByJson.TryGetProperty("ascending", StringComparer.OrdinalIgnoreCase, out var ascendingJson))
+                throw new ArgumentException();
+
+            var ascending = ascendingJson.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => throw new ArgumentException(),
+            };
+
+            if (!orderByJson.TryGetProperty("expression", StringComparer.OrdinalIgnoreCase, out var expressionJson))
+                throw new ArgumentException();
+            if (expressionJson.ValueKind != JsonValueKind.Object)
+                throw new ArgumentException();
+
+            var expression = ParseExpression(expressionJson);
+
+            return new LateBindingOrderBy(ascending, expression);
         }
     }
 }
