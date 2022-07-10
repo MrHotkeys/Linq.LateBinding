@@ -93,20 +93,21 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             var currentExpr = targetExpr;
             for (var i = 0; i < split.Length; i++)
             {
-                var field = split[i];
-                var property = currentExpr
+                var name = split[i];
+                var member = currentExpr
                     .Type
-                    .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(p => StringComparer.OrdinalIgnoreCase.Equals(p.Name, field))
+                    .GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(m => (m.MemberType == MemberTypes.Field || m.MemberType == MemberTypes.Property) &&
+                        StringComparer.OrdinalIgnoreCase.Equals(m.Name, name))
                     .Single();
 
-                if (MemberOverrides.TryGetValue(property, out var memberOverride) && (memberOverride.OnlyOnDirect == false || i == split.Length - 1))
+                if (MemberOverrides.TryGetValue(member, out var memberOverride) && (memberOverride.OnlyOnDirect == false || i == split.Length - 1))
                 {
                     currentExpr = memberOverride.BuildOverride(currentExpr);
                 }
                 else
                 {
-                    currentExpr = Expression.MakeMemberAccess(currentExpr, property);
+                    currentExpr = Expression.MakeMemberAccess(currentExpr, member);
                 }
             }
 
