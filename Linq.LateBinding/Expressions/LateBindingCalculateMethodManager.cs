@@ -11,8 +11,11 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
         private Dictionary<string, List<CalculateExpressionBuilder>> Builders =
             new Dictionary<string, List<CalculateExpressionBuilder>>(StringComparer.OrdinalIgnoreCase);
 
-        public LateBindingCalculateMethodManager()
-        { }
+        public LateBindingCalculateMethodManager(bool init)
+        {
+            if (init)
+                LateBindingCalculateMethodManagerInit.Init(this);
+        }
 
         private void AddBuilder(CalculateExpressionBuilder builder)
         {

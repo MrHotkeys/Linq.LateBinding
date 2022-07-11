@@ -32,7 +32,7 @@ namespace MrHotkeys.Linq.LateBinding
             get
             {
                 if (_calculateMethodManager is null)
-                    _calculateMethodManager = new LateBindingCalculateMethodManager();
+                    _calculateMethodManager = new LateBindingCalculateMethodManager(true);
 
                 return _calculateMethodManager;
             }
