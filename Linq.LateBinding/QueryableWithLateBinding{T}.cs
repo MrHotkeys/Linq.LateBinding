@@ -24,6 +24,9 @@ namespace MrHotkeys.Linq.LateBinding
 
         public QueryableWithLateBinding<object?> Query(ILateBindingQuery query)
         {
+            if (query is null)
+                throw new ArgumentNullException(nameof(query));
+
             var queryable = this;
 
             if (query.Where is not null)
@@ -57,6 +60,11 @@ namespace MrHotkeys.Linq.LateBinding
 
             foreach (var (name, lateBindingExpression) in select)
             {
+                if (name is null)
+                    throw new ArgumentException("Cannot contain null keys!", nameof(select));
+                if (lateBindingExpression is null)
+                    throw new ArgumentException("Cannot contain null values!", nameof(select));
+
                 var expression = QueryableWithLateBinding.ExpressionTreeBuilder.Build(selectTargetParameterExpr, lateBindingExpression);
                 selectMemberExpressions[name] = expression;
 
@@ -93,10 +101,16 @@ namespace MrHotkeys.Linq.LateBinding
 
         public QueryableWithLateBinding<T> Where(IEnumerable<ILateBindingExpression> where)
         {
+            if (where is null)
+                throw new ArgumentNullException(nameof(where));
+
             var targetParameterExpr = Expression.Parameter(typeof(T));
             var whereBodyExpr = where
                 .Select(w =>
                 {
+                    if (w is null)
+                        throw new ArgumentException("Cannot contain null!", nameof(where));
+
                     var expr = QueryableWithLateBinding.ExpressionTreeBuilder.Build(targetParameterExpr, w);
                     if (expr.Type != typeof(bool))
                         throw new InvalidOperationException();
@@ -112,9 +126,15 @@ namespace MrHotkeys.Linq.LateBinding
 
         public QueryableWithLateBinding<T> OrderBy(IEnumerable<LateBindingOrderBy> orderBy)
         {
+            if (orderBy is null)
+                throw new ArgumentNullException(nameof(orderBy));
+
             var entities = Entities;
             foreach (var ob in orderBy)
             {
+                if (ob is null)
+                    throw new ArgumentException("Cannot contain null!", nameof(orderBy));
+
                 var targetParameterExpr = Expression.Parameter(typeof(T));
                 var bodyExpr = QueryableWithLateBinding.ExpressionTreeBuilder.Build(targetParameterExpr, ob.Expression);
 
