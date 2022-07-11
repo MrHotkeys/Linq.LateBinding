@@ -30,7 +30,7 @@ namespace MrHotkeys.Linq.LateBinding
                 queryable = queryable.Where(query.Where);
 
             if (query.OrderBy is not null)
-            { }
+                queryable = queryable.OrderBy(query.OrderBy);
 
             if (query.Skip.HasValue)
             { }
@@ -110,41 +110,35 @@ namespace MrHotkeys.Linq.LateBinding
             return new QueryableWithLateBinding<T>(entitiesSelected);
         }
 
-        public QueryableWithLateBinding<T> OrderBy(string propertyName) =>
-            OrderBy(propertyName, true);
-
-        public QueryableWithLateBinding<T> OrderByDescending(string propertyName) =>
-            OrderBy(propertyName, false);
-
-        private QueryableWithLateBinding<T> OrderBy(string propertyName, bool ascending)
+        public QueryableWithLateBinding<T> OrderBy(IEnumerable<LateBindingOrderBy> orderBy)
         {
-            if (propertyName is null)
-                throw new ArgumentNullException(nameof(propertyName));
+            var entities = Entities;
+            foreach (var ob in orderBy)
+            {
+                var targetParameterExpr = Expression.Parameter(typeof(T));
+                var bodyExpr = QueryableWithLateBinding.ExpressionTreeBuilder.Build(targetParameterExpr, ob.Expression);
 
-            var property = typeof(T).GetProperty(propertyName);
-            if (property is null)
-                throw new ArgumentException($"Property {propertyName} not found on type {typeof(T).Name}!", nameof(propertyName));
+                // Need to call another method to assemble and apply the lambda so we can
+                // do it in a context where the type of the member is a type parameter
+                entities = (IQueryable<T>)typeof(QueryableWithLateBinding<T>)
+                    .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Where(m => m.Name == nameof(ApplyOrderBy) && m.ContainsGenericParameters)
+                    .Single()
+                    .GetGenericMethodDefinition()
+                    .MakeGenericMethod(bodyExpr.Type)
+                    .Invoke(this, new object[] { entities, bodyExpr, targetParameterExpr, ob.Ascending })!;
+            }
 
-            return (QueryableWithLateBinding<T>)typeof(QueryableWithLateBinding<T>)
-                .GetMethods(BindingFlags.Instance | BindingFlags.NonPublic)
-                .Where(m => m.Name == nameof(OrderBy) && m.ContainsGenericParameters)
-                .Single()
-                .GetGenericMethodDefinition()
-                .MakeGenericMethod(property.PropertyType)
-                .Invoke(this, new object[] { property, ascending })!;
+            return new QueryableWithLateBinding<T>(entities);
         }
 
-        private QueryableWithLateBinding<T> OrderBy<TProperty>(PropertyInfo property, bool ascending)
+        private IQueryable<T> ApplyOrderBy<TMember>(IQueryable<T> entities, Expression bodyExpr, ParameterExpression targetParameterExpr, bool ascending)
         {
-            var entityExpr = Expression.Parameter(typeof(T));
-            var memberExpr = Expression.MakeMemberAccess(entityExpr, property);
-            var lambdaExpr = Expression.Lambda<Func<T, TProperty>>(memberExpr, entityExpr);
+            var orderByExpr = Expression.Lambda<Func<T, TMember>>(bodyExpr, targetParameterExpr);
 
-            var entitiesOrdered = ascending ?
-                Entities.OrderBy(lambdaExpr) :
-                Entities.OrderByDescending(lambdaExpr);
-
-            return new QueryableWithLateBinding<T>(entitiesOrdered);
+            return ascending ?
+                entities.OrderBy(orderByExpr) :
+                entities.OrderByDescending(orderByExpr);
         }
 
         public IEnumerator<T> GetEnumerator() => Entities.GetEnumerator();
