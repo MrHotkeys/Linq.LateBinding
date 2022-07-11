@@ -36,7 +36,7 @@ namespace MrHotkeys.Linq.LateBinding
                 queryable = queryable.Skip(query.Skip.Value);
 
             if (query.Take.HasValue)
-            { }
+                queryable = queryable.Take(query.Take.Value);
 
             // Select last since it upcasts everything as object (since the result will be a generated DTO type if a select
             // is defined) and that will prevent Where and OrderBy from seeing the correct object type to find members
