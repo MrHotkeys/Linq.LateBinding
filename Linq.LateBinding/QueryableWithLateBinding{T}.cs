@@ -81,33 +81,33 @@ namespace MrHotkeys.Linq.LateBinding
             var selectObjectExpr = Expression.Convert(selectMemberInitExpr, typeof(object));
             var selectExpr = Expression.Lambda<Func<T, object>>(selectMemberInitExpr, selectSourceParameterExpr); // TODO: Add null for source parameter
 
-            var entitiesSelected = Entities.Select(selectExpr);
-            return new QueryableWithLateBinding<object?>(entitiesSelected);
+            var entities = Entities.Select(selectExpr);
+            return new QueryableWithLateBinding<object?>(entities);
         }
 
         private QueryableWithLateBinding<object?> SelectAsObjects()
         {
-            var entitiesSelected = Entities.Select(x => (object?)x);
-            return new QueryableWithLateBinding<object?>(entitiesSelected);
+            var entities = Entities.Select(x => (object?)x);
+            return new QueryableWithLateBinding<object?>(entities);
         }
 
         public QueryableWithLateBinding<T> Where(IEnumerable<ILateBindingExpression> where)
         {
-            var whereTargetParameterExpr = Expression.Parameter(typeof(T));
+            var targetParameterExpr = Expression.Parameter(typeof(T));
             var whereBodyExpr = where
                 .Select(w =>
                 {
-                    var expression = QueryableWithLateBinding.ExpressionTreeBuilder.Build(whereTargetParameterExpr, w);
-                    if (expression.Type != typeof(bool))
+                    var expr = QueryableWithLateBinding.ExpressionTreeBuilder.Build(targetParameterExpr, w);
+                    if (expr.Type != typeof(bool))
                         throw new InvalidOperationException();
-                    return expression;
+                    return expr;
                 })
                 .Aggregate((left, right) => Expression.And(left, right));
 
-            var whereExpr = Expression.Lambda<Func<T, bool>>(whereBodyExpr, whereTargetParameterExpr);
+            var whereExpr = Expression.Lambda<Func<T, bool>>(whereBodyExpr, targetParameterExpr);
 
-            var entitiesSelected = Entities.Where(whereExpr);
-            return new QueryableWithLateBinding<T>(entitiesSelected);
+            var entities = Entities.Where(whereExpr);
+            return new QueryableWithLateBinding<T>(entities);
         }
 
         public QueryableWithLateBinding<T> OrderBy(IEnumerable<LateBindingOrderBy> orderBy)
