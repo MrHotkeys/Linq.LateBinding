@@ -33,7 +33,7 @@ namespace MrHotkeys.Linq.LateBinding
                 queryable = queryable.OrderBy(query.OrderBy);
 
             if (query.Skip.HasValue)
-            { }
+                queryable = queryable.Skip(query.Skip.Value);
 
             if (query.Take.HasValue)
             { }
@@ -50,14 +50,14 @@ namespace MrHotkeys.Linq.LateBinding
             if (select is null)
                 throw new ArgumentNullException(nameof(select));
 
-            var selectSourceParameterExpr = Expression.Parameter(typeof(T));
+            var selectTargetParameterExpr = Expression.Parameter(typeof(T));
             var selectMemberExpressions = new Dictionary<string, Expression>();
 
             var dtoPropertyDefinitions = new List<DtoPropertyDefinition>();
 
             foreach (var (name, lateBindingExpression) in select)
             {
-                var expression = QueryableWithLateBinding.ExpressionTreeBuilder.Build(selectSourceParameterExpr, lateBindingExpression);
+                var expression = QueryableWithLateBinding.ExpressionTreeBuilder.Build(selectTargetParameterExpr, lateBindingExpression);
                 selectMemberExpressions[name] = expression;
 
                 var dtoPropertyDefinition = new DtoPropertyDefinition(name, expression.Type);
@@ -79,7 +79,7 @@ namespace MrHotkeys.Linq.LateBinding
             var selectNewExpr = Expression.New(dtoConstructor);
             var selectMemberInitExpr = Expression.MemberInit(selectNewExpr, selectMemberBindings);
             var selectObjectExpr = Expression.Convert(selectMemberInitExpr, typeof(object));
-            var selectExpr = Expression.Lambda<Func<T, object>>(selectMemberInitExpr, selectSourceParameterExpr); // TODO: Add null for source parameter
+            var selectExpr = Expression.Lambda<Func<T, object>>(selectMemberInitExpr, selectTargetParameterExpr); // TODO: Add null for source parameter
 
             var entities = Entities.Select(selectExpr);
             return new QueryableWithLateBinding<object?>(entities);
@@ -139,6 +139,24 @@ namespace MrHotkeys.Linq.LateBinding
             return ascending ?
                 entities.OrderBy(orderByExpr) :
                 entities.OrderByDescending(orderByExpr);
+        }
+
+        public QueryableWithLateBinding<T> Skip(int count)
+        {
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), count, "Must be >= 0!");
+
+            var entities = Entities.Skip(count);
+            return new QueryableWithLateBinding<T>(entities);
+        }
+
+        public QueryableWithLateBinding<T> Take(int count)
+        {
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), count, "Must be >= 0!");
+
+            var entities = Entities.Take(count);
+            return new QueryableWithLateBinding<T>(entities);
         }
 
         public IEnumerator<T> GetEnumerator() => Entities.GetEnumerator();
