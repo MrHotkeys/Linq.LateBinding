@@ -10,9 +10,9 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
     {
         private Dictionary<MemberInfo, MemberOverrideDefinition> MemberOverrides { get; set; } = new Dictionary<MemberInfo, MemberOverrideDefinition>();
 
-        private ICalculateExpressionManager CalculateExpressionManager { get; }
+        private ILateBindingCalculateMethodManager CalculateExpressionManager { get; }
 
-        public LateBindingExpressionTreeBuilder(ICalculateExpressionManager calculateExpressionManager)
+        public LateBindingExpressionTreeBuilder(ILateBindingCalculateMethodManager calculateExpressionManager)
         {
             CalculateExpressionManager = calculateExpressionManager ?? throw new ArgumentNullException(nameof(calculateExpressionManager));
         }

@@ -6,12 +6,12 @@ using System.Linq.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
-    public sealed class CalculateExpressionManager : ICalculateExpressionManager
+    public sealed class LateBindingCalculateMethodManager : ILateBindingCalculateMethodManager
     {
         private Dictionary<string, List<CalculateExpressionBuilder>> Builders =
             new Dictionary<string, List<CalculateExpressionBuilder>>(StringComparer.OrdinalIgnoreCase);
 
-        public CalculateExpressionManager()
+        public LateBindingCalculateMethodManager()
         { }
 
         private void AddBuilder(CalculateExpressionBuilder builder)
@@ -25,7 +25,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             list.Add(builder);
         }
 
-        public CalculateExpressionManager Define(string method, Func<IReadOnlyList<Expression>, Expression> builderFunc, Type[] parameterTypes)
+        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression> builderFunc, Type[] parameterTypes)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -42,7 +42,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return this;
         }
 
-        public CalculateExpressionManager Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
+        public LateBindingCalculateMethodManager Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -52,7 +52,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public CalculateExpressionManager Define<T0, T1, TOut>(string method, Expression<Func<T0, T1, TOut>> builderExpr)
+        public LateBindingCalculateMethodManager Define<T0, T1, TOut>(string method, Expression<Func<T0, T1, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -62,7 +62,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public CalculateExpressionManager Define<T0, T1, T2, TOut>(string method, Expression<Func<T0, T1, T2, TOut>> builderExpr)
+        public LateBindingCalculateMethodManager Define<T0, T1, T2, TOut>(string method, Expression<Func<T0, T1, T2, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -72,7 +72,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public CalculateExpressionManager Define(string method, LambdaExpression builderExpr)
+        public LateBindingCalculateMethodManager Define(string method, LambdaExpression builderExpr)
         {
             var parameterTypes = builderExpr
                 .Parameters

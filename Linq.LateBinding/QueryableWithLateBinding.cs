@@ -20,17 +20,17 @@ namespace MrHotkeys.Linq.LateBinding
             set => _dtoGenerator = value ?? throw new ArgumentNullException();
         }
 
-        private static ICalculateExpressionManager? _calculateExpressionManager;
-        public static ICalculateExpressionManager CalculateExpressionManager
+        private static ILateBindingCalculateMethodManager? _calculateMethodManager;
+        public static ILateBindingCalculateMethodManager CalculateMethodManager
         {
             get
             {
-                if (_calculateExpressionManager is null)
-                    _calculateExpressionManager = new CalculateExpressionManager();
+                if (_calculateMethodManager is null)
+                    _calculateMethodManager = new LateBindingCalculateMethodManager();
 
-                return _calculateExpressionManager;
+                return _calculateMethodManager;
             }
-            set => _calculateExpressionManager = value ?? throw new ArgumentNullException();
+            set => _calculateMethodManager = value ?? throw new ArgumentNullException();
         }
 
         private static ILateBindingExpressionTreeBuilder? _expressionTreeBuilder;
@@ -39,7 +39,7 @@ namespace MrHotkeys.Linq.LateBinding
             get
             {
                 if (_expressionTreeBuilder is null)
-                    _expressionTreeBuilder = new LateBindingExpressionTreeBuilder(CalculateExpressionManager);
+                    _expressionTreeBuilder = new LateBindingExpressionTreeBuilder(CalculateMethodManager);
 
                 return _expressionTreeBuilder;
             }
