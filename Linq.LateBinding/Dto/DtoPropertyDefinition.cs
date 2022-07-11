@@ -13,5 +13,17 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Type = type ?? throw new ArgumentNullException(nameof(type));
         }
+
+        public override bool Equals(object obj) =>
+            obj is DtoPropertyDefinition other && Equals(other);
+
+        public bool Equals(DtoPropertyDefinition other) =>
+            other.Name == Name && other.Type == Type;
+
+        public override int GetHashCode() =>
+            HashCode.Combine(Name, Type);
+
+        public override string ToString() =>
+            $"{Type.Name} {Name}";
     }
 }

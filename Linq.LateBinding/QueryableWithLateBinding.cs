@@ -13,7 +13,10 @@ namespace MrHotkeys.Linq.LateBinding
             get
             {
                 if (_dtoGenerator is null)
-                    _dtoGenerator = new DtoTypeGenerator();
+                {
+                    var innerGenerator = new DtoTypeGenerator();
+                    _dtoGenerator = new CachingDtoTypeGenerator(innerGenerator);
+                }
 
                 return _dtoGenerator;
             }
