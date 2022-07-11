@@ -80,40 +80,6 @@ namespace MrHotkeys.Linq.LateBinding
             return new QueryableWithLateBinding<T>(entitiesOrdered);
         }
 
-        public QueryableWithLateBinding<TDto> Select<TDto>(params string[] propertyNames)
-        {
-            if (propertyNames is null)
-                throw new ArgumentNullException(nameof(propertyNames));
-
-            var dtoType = QueryableWithLateBinding.DtoGenerator.Generate<T, TDto>(propertyNames);
-
-            var entityExpr = Expression.Parameter(typeof(T));
-
-            var memberBindings = propertyNames
-                .Select(pn =>
-                {
-                    var sourceProperty = typeof(T).GetProperty(pn)!;
-                    var dtoProperty = dtoType.GetProperty(pn)!;
-
-                    if (sourceProperty.GetMethod is null)
-                        throw new ArgumentException();
-
-                    var sourcePropertyExpr = Expression.MakeMemberAccess(entityExpr, sourceProperty);
-
-                    return Expression.Bind(dtoProperty, sourcePropertyExpr);
-                })
-                .ToArray();
-
-            var newDtoExpr = Expression.New(dtoType.GetConstructor(Type.EmptyTypes)!);
-            var dtoInitExpr = Expression.MemberInit(newDtoExpr, memberBindings);
-            var lambdaExpr = Expression.Lambda<Func<T, TDto>>(dtoInitExpr, entityExpr);
-
-            var entitiesSelected = Entities.Select(lambdaExpr);
-
-            return new QueryableWithLateBinding<TDto>(entitiesSelected);
-        }
-
-
         public QueryableWithLateBinding<object?> Select(IDictionary<string, ILateBindingExpression> select)
         {
             if (select is null)
