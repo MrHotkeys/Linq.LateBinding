@@ -6,7 +6,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public interface ILateBindingCalculateMethodManager
     {
-        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes);
+        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes, bool convertArgs);
 
         public LateBindingCalculateMethodManager Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr);
 

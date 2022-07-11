@@ -25,7 +25,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             list.Add(builder);
         }
 
-        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes)
+        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes, bool convertArgs)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -36,7 +36,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             if (parameterTypes.Contains(null))
                 throw new ArgumentException("Cannot contain null!", nameof(parameterTypes));
 
-            var builder = new CalculateExpressionBuilder(method, buildFunc, parameterTypes, false);
+            var builder = new CalculateExpressionBuilder(method, buildFunc, parameterTypes, convertArgs);
             AddBuilder(builder);
 
             return this;
@@ -163,6 +163,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 if (incompatibilityFound)
                     continue;
 
+                // Put perfect matches first so they're prioritized
                 if (perfectMatch)
                     candidates.Insert(0, builder);
                 else
