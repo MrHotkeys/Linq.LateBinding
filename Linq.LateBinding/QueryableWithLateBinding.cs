@@ -14,8 +14,11 @@ namespace MrHotkeys.Linq.LateBinding
             {
                 if (_dtoGenerator is null)
                 {
-                    var innerGenerator = new DtoTypeGenerator();
-                    _dtoGenerator = new CachingDtoTypeGenerator(innerGenerator);
+                    var actualGenerator = new DtoTypeGenerator();
+                    var resettingWrapper = new SelfResettingDtoTypeGenerator(actualGenerator, 100);
+                    var cachingWrapper = new CachingDtoTypeGenerator(resettingWrapper); // This needs to come after the resetting wrapper!
+
+                    _dtoGenerator = cachingWrapper;
                 }
 
                 return _dtoGenerator;

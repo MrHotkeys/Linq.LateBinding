@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace MrHotkeys.Linq.LateBinding.Dto
@@ -8,7 +9,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
     {
         private IDtoTypeGenerator Generator { get; }
 
-        private Dictionary<CacheKey, Type> DtoTypeCache { get; } = new Dictionary<CacheKey, Type>();
+        private Dictionary<CacheKey, WeakReference<Type>> DtoTypeCache { get; } = new Dictionary<CacheKey, WeakReference<Type>>();
 
         private object DtoTypeCacheLock { get; } = new object();
 
@@ -20,19 +21,48 @@ namespace MrHotkeys.Linq.LateBinding.Dto
         public Type Generate(IEnumerable<DtoPropertyDefinition> propertyDefintions)
         {
             var key = new CacheKey(propertyDefintions);
-            if (!DtoTypeCache.TryGetValue(key, out var dtoType))
+
+            return TryGetDtoType(key, out var dtoType) ?
+                dtoType :
+                GenerateAndCache(key, propertyDefintions);
+        }
+
+        private bool TryGetDtoType(CacheKey key, [NotNullWhen(true)] out Type? dtoType)
+        {
+            if (DtoTypeCache.TryGetValue(key, out var dtoTypeReference) && dtoTypeReference.TryGetTarget(out dtoType))
             {
-                lock (DtoTypeCacheLock)
+                return true;
+            }
+            else
+            {
+                dtoType = default;
+                return false;
+            }
+        }
+
+        private Type GenerateAndCache(CacheKey key, IEnumerable<DtoPropertyDefinition> propertyDefintions)
+        {
+            lock (DtoTypeCacheLock)
+            {
+                // Now that we're inside the lock, we'll check the cache again, and the weak
+                // reference returned, to see if something else refreshed the cache first
+                if (TryGetDtoType(key, out var dtoType))
                 {
-                    if (!DtoTypeCache.TryGetValue(key, out dtoType))
-                    {
-                        dtoType = Generator.Generate(propertyDefintions);
-                        DtoTypeCache[key] = dtoType;
-                    }
+                    return dtoType;
+                }
+                else
+                {
+                    dtoType = Generator.Generate(propertyDefintions);
+                    DtoTypeCache[key] = new WeakReference<Type>(dtoType);
+
+                    return dtoType;
                 }
             }
+        }
 
-            return dtoType;
+        public void Reset()
+        {
+            Generator.Reset();
         }
 
         private struct CacheKey

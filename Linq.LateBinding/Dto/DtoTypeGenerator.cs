@@ -7,25 +7,26 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class DtoTypeGenerator : IDtoTypeGenerator
     {
-        public string DtoAssemblyName { get; }
+        public string? DtoAssemblyName { get; set; }
 
-        private AssemblyBuilder DtoAssemblyBuilder { get; }
+        private AssemblyBuilder? DtoAssemblyBuilder { get; set; }
 
-        private ModuleBuilder DtoModuleBuilder { get; }
+        private ModuleBuilder? DtoModuleBuilder { get; set; }
 
         public DtoTypeGenerator()
-            : this($"Linq.LateBinding DTO Assembly ({Guid.NewGuid()})")
-        { }
-
-        public DtoTypeGenerator(string assemblyName)
         {
-            DtoAssemblyName = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
+            Reset();
+        }
+
+        public void Reset()
+        {
+            DtoAssemblyName = $"Linq.LateBinding DTO Assembly ({Guid.NewGuid()})";
 
             DtoAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
-                name: new AssemblyName(assemblyName),
+                name: new AssemblyName(DtoAssemblyName),
                 access: AssemblyBuilderAccess.RunAndCollect);
 
-            DtoModuleBuilder = DtoAssemblyBuilder.DefineDynamicModule("StitchEF DTO Module");
+            DtoModuleBuilder = DtoAssemblyBuilder.DefineDynamicModule("Linq.LateBinding DTO Module");
         }
 
         public Type Generate(IEnumerable<DtoPropertyDefinition> propertyDefinitions)
@@ -33,7 +34,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             if (propertyDefinitions is null)
                 throw new ArgumentNullException(nameof(propertyDefinitions));
 
-            var dtoTypeBuilder = DtoModuleBuilder.DefineType(
+            var dtoTypeBuilder = DtoModuleBuilder!.DefineType(
                 name: $"DTO ({Guid.NewGuid()})",
                 attr: TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Sealed);
 
