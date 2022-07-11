@@ -88,7 +88,7 @@ namespace MrHotkeys.Linq.LateBinding
             var selectNewExpr = Expression.New(dtoConstructor);
             var selectMemberInitExpr = Expression.MemberInit(selectNewExpr, selectMemberBindings);
             var selectObjectExpr = Expression.Convert(selectMemberInitExpr, typeof(object));
-            var selectExpr = Expression.Lambda<Func<T, object>>(selectMemberInitExpr, selectTargetParameterExpr); // TODO: Add null for source parameter
+            var selectExpr = Expression.Lambda<Func<T, object>>(selectObjectExpr, selectTargetParameterExpr);
 
             var entities = Entities.Select(selectExpr);
             return new QueryableWithLateBinding<object?>(entities);
