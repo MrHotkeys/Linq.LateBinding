@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
@@ -10,7 +11,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
         public string Method { get; }
 
-        public ImmutableArray<ILateBindingExpression> Expressions { get; }
+        public IReadOnlyList<ILateBindingExpression> Expressions { get; }
 
         public CalculateLateBindingExpression(string method, IEnumerable<ILateBindingExpression> expressions)
         {
@@ -18,7 +19,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
             if (expressions is null)
                 throw new ArgumentNullException(nameof(expressions));
-            Expressions = expressions.ToImmutableArray();
+            Expressions = new ReadOnlyCollection<ILateBindingExpression>(expressions.ToArray());
         }
 
         public override string ToString() =>

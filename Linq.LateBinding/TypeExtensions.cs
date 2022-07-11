@@ -24,7 +24,7 @@ namespace MrHotkeys.Linq.LateBinding
             if (to is null)
                 throw new ArgumentNullException(nameof(to));
 
-            if (from.IsAssignableTo(to))
+            if (to.IsAssignableFrom(from))
                 return true;
 
             if ((from.IsPrimitive || from.IsEnum) && (to.IsPrimitive || to.IsEnum))

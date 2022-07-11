@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -153,7 +153,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 Method = method ?? throw new ArgumentNullException(nameof(method));
                 BuilderFunc = builderFunc ?? throw new ArgumentNullException(nameof(builderFunc));
                 ParameterTypes = parameterTypes is not null ?
-                    parameterTypes.ToImmutableArray() :
+                    new ReadOnlyCollection<Type>(parameterTypes) :
                     throw new ArgumentNullException(nameof(parameterTypes));
             }
 
