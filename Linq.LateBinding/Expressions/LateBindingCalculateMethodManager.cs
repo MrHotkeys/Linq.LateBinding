@@ -36,7 +36,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             if (parameterTypes.Contains(null))
                 throw new ArgumentException("Cannot contain null!", nameof(parameterTypes));
 
-            var builder = new CalculateExpressionBuilder(method, builderFunc, parameterTypes);
+            var builder = new CalculateExpressionBuilder(method, builderFunc, parameterTypes, false);
             AddBuilder(builder);
 
             return this;
@@ -91,7 +91,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 return visitor.Visit(builderExpr.Body);
             };
 
-            var builder = new CalculateExpressionBuilder(method, builderFunc, parameterTypes);
+            var builder = new CalculateExpressionBuilder(method, builderFunc, parameterTypes, true);
             AddBuilder(builder);
 
             return this;
@@ -127,7 +127,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                         break;
                     }
 
-                    expressionReTyped[i] = expressions[i].Type == parameterType ?
+                    expressionReTyped[i] = !builder.RequireParameterRetype || expressions[i].Type == parameterType ?
                         expressions[i] :
                         Expression.Convert(expressions[i], parameterType);
                 }
@@ -148,13 +148,16 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
             public IReadOnlyList<Type> ParameterTypes { get; }
 
-            public CalculateExpressionBuilder(string method, Func<IReadOnlyList<Expression>, Expression> builderFunc, IList<Type> parameterTypes)
+            public bool RequireParameterRetype { get; }
+
+            public CalculateExpressionBuilder(string method, Func<IReadOnlyList<Expression>, Expression> builderFunc, IList<Type> parameterTypes, bool requireParameterRetype)
             {
                 Method = method ?? throw new ArgumentNullException(nameof(method));
                 BuilderFunc = builderFunc ?? throw new ArgumentNullException(nameof(builderFunc));
                 ParameterTypes = parameterTypes is not null ?
                     new ReadOnlyCollection<Type>(parameterTypes) :
                     throw new ArgumentNullException(nameof(parameterTypes));
+                RequireParameterRetype = requireParameterRetype;
             }
 
             public Expression Build(IReadOnlyList<Expression> expressions) =>
