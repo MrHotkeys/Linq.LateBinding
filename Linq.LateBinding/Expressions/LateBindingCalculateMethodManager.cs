@@ -121,7 +121,8 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                     var expressionType = expressions[i].Type;
                     var parameterType = builder.ParameterTypes[i];
 
-                    if (!expressionType.CanCastTo(parameterType, implicitOnly: true))
+                    if (!expressionType.CanCastTo(parameterType, implicitOnly: true) &&
+                        !(expressions[i] is ConstantExpression constantExpr && constantExpr.Value is null && parameterType.CanBeSetToNull()))
                     {
                         incompatibilityFound = true;
                         break;

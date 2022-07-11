@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -6,6 +7,31 @@ namespace MrHotkeys.Linq.LateBinding
 {
     internal static class TypeExtensions
     {
+        /// <summary>
+        /// Gets whether variables the given type can be set to null.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>True if can be set to null, false if not.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is null.</exception>
+        public static bool CanBeSetToNull(this Type type) =>
+            type is null ? throw new ArgumentNullException(nameof(type)) :
+            type.IsClass || IsNullableValueType(type);
+
+        /// <summary>
+        /// Gets if the type is <see cref="Nullable{T}"/>.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>True if the type is <see cref="Nullable{T}"/>, false if not.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is null.</exception>
+        public static bool IsNullableValueType(this Type type) =>
+            IsNullableValueType(type, out _);
+
+        /// <param name="underlyingType">If this type is <see cref="Nullable{T}"/>, will be set to the nullable's underlying type.</param>
+        /// <inheritdoc cref="IsNullableValueType(Type)"/>
+        public static bool IsNullableValueType(this Type type, [NotNullWhen(true)] out Type? underlyingType) =>
+            type is null ? throw new ArgumentNullException(nameof(type)) :
+            (underlyingType = Nullable.GetUnderlyingType(type)) != null;
+
         /// <summary>
         /// Gets if the type can be cast to another given type.
         /// </summary>

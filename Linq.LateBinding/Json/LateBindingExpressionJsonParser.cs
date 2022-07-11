@@ -132,6 +132,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 JsonValueKind.True => true,
                 JsonValueKind.Number => valueElement.GetNumberBoxed(),
                 JsonValueKind.String => valueElement.GetString(),
+                JsonValueKind.Null => null,
                 _ => throw new ArgumentException(),
             };
 
