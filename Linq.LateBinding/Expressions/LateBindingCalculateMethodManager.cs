@@ -106,35 +106,19 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             if (expressions.Contains(null!))
                 throw new ArgumentException("Cannot contain null!", nameof(expressions));
 
-            if (!Builders.TryGetValue(method, out var list))
-                throw new KeyNotFoundException($"No builders defined for method \"{method}\"!");
-
+            var candidateBuilders = FindCandidateBuilders(method, expressions);
             var expressionReTyped = new Expression[expressions.Count];
-            foreach (var builder in list)
+            foreach (var builder in candidateBuilders)
             {
-                if (expressions.Count != builder.ParameterTypes.Count)
-                    continue;
-
-                var incompatibilityFound = false;
                 for (var i = 0; i < builder.ParameterTypes.Count; i++)
                 {
-                    var expressionType = expressions[i].Type;
+                    var expression = expressions[i];
                     var parameterType = builder.ParameterTypes[i];
 
-                    if (!expressionType.CanCastTo(parameterType, implicitOnly: true) &&
-                        !(expressions[i] is ConstantExpression constantExpr && constantExpr.Value is null && parameterType.CanBeSetToNull()))
-                    {
-                        incompatibilityFound = true;
-                        break;
-                    }
-
-                    expressionReTyped[i] = !builder.RequireParameterRetype || expressions[i].Type == parameterType ?
-                        expressions[i] :
-                        Expression.Convert(expressions[i], parameterType);
+                    expressionReTyped[i] = !builder.RequireParameterRetype || expression.Type == parameterType ?
+                        expression :
+                        Expression.Convert(expression, parameterType);
                 }
-
-                if (incompatibilityFound)
-                    continue;
 
                 var resultExpr = builder.BuildFunc(expressionReTyped);
                 if (resultExpr != null)
@@ -144,6 +128,48 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             }
 
             throw new InvalidOperationException($"No suitable candidate builders found!");
+        }
+
+        private List<CalculateExpressionBuilder> FindCandidateBuilders(string method, IList<Expression> expressions)
+        {
+            var candidates = new List<CalculateExpressionBuilder>();
+
+            if (!Builders.TryGetValue(method, out var list))
+                return candidates;
+
+            foreach (var builder in list)
+            {
+                if (expressions.Count != builder.ParameterTypes.Count)
+                    continue;
+
+                var incompatibilityFound = false;
+                var perfectMatch = true;
+                for (var i = 0; i < builder.ParameterTypes.Count; i++)
+                {
+                    var expressionType = expressions[i].Type;
+                    var parameterType = builder.ParameterTypes[i];
+
+                    if (expressionType != parameterType)
+                        perfectMatch = false;
+
+                    if (!expressionType.CanCastTo(parameterType, implicitOnly: true) &&
+                        !(expressions[i] is ConstantExpression constantExpr && constantExpr.Value is null && parameterType.CanBeSetToNull()))
+                    {
+                        incompatibilityFound = true;
+                        break;
+                    }
+                }
+
+                if (incompatibilityFound)
+                    continue;
+
+                if (perfectMatch)
+                    candidates.Insert(0, builder);
+                else
+                    candidates.Add(builder);
+            }
+
+            return candidates;
         }
 
         private sealed class CalculateExpressionBuilder
