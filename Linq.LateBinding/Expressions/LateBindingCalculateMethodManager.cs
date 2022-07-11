@@ -25,18 +25,18 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             list.Add(builder);
         }
 
-        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression> builderFunc, Type[] parameterTypes)
+        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
-            if (builderFunc is null)
-                throw new ArgumentNullException(nameof(builderFunc));
+            if (buildFunc is null)
+                throw new ArgumentNullException(nameof(buildFunc));
             if (parameterTypes is null)
                 throw new ArgumentNullException(nameof(parameterTypes));
             if (parameterTypes.Contains(null))
                 throw new ArgumentException("Cannot contain null!", nameof(parameterTypes));
 
-            var builder = new CalculateExpressionBuilder(method, builderFunc, parameterTypes, false);
+            var builder = new CalculateExpressionBuilder(method, buildFunc, parameterTypes, false);
             AddBuilder(builder);
 
             return this;
@@ -79,19 +79,19 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 .Select(p => p.Type)
                 .ToArray();
 
-            var builderFunc = (IReadOnlyList<Expression> expressions) =>
+            Expression BuildFuncFromLambda(IReadOnlyList<Expression> argExprs)
             {
                 var visitor = new ParameterExpressionReplaceVisitor();
 
                 for (var i = 0; i < parameterTypes.Length; i++)
                 {
-                    visitor.Add(builderExpr.Parameters[i], expressions[i]);
+                    visitor.Add(builderExpr.Parameters[i], argExprs[i]);
                 }
 
                 return visitor.Visit(builderExpr.Body);
-            };
+            }
 
-            var builder = new CalculateExpressionBuilder(method, builderFunc, parameterTypes, true);
+            var builder = new CalculateExpressionBuilder(method, BuildFuncFromLambda, parameterTypes, true);
             AddBuilder(builder);
 
             return this;
@@ -135,7 +135,11 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 if (incompatibilityFound)
                     continue;
 
-                return builder.Build(expressionReTyped);
+                var resultExpr = builder.BuildFunc(expressionReTyped);
+                if (resultExpr != null)
+                    return resultExpr;
+
+                // TODO: Log that the builder soft failed
             }
 
             throw new InvalidOperationException($"No suitable candidate builders found!");
@@ -144,24 +148,21 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
         private sealed class CalculateExpressionBuilder
         {
             public string Method { get; }
-            private Func<IReadOnlyList<Expression>, Expression> BuilderFunc { get; }
+            public Func<IReadOnlyList<Expression>, Expression?> BuildFunc { get; }
 
             public IReadOnlyList<Type> ParameterTypes { get; }
 
             public bool RequireParameterRetype { get; }
 
-            public CalculateExpressionBuilder(string method, Func<IReadOnlyList<Expression>, Expression> builderFunc, IList<Type> parameterTypes, bool requireParameterRetype)
+            public CalculateExpressionBuilder(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, IList<Type> parameterTypes, bool requireParameterRetype)
             {
                 Method = method ?? throw new ArgumentNullException(nameof(method));
-                BuilderFunc = builderFunc ?? throw new ArgumentNullException(nameof(builderFunc));
+                BuildFunc = buildFunc ?? throw new ArgumentNullException(nameof(buildFunc));
                 ParameterTypes = parameterTypes is not null ?
                     new ReadOnlyCollection<Type>(parameterTypes) :
                     throw new ArgumentNullException(nameof(parameterTypes));
                 RequireParameterRetype = requireParameterRetype;
             }
-
-            public Expression Build(IReadOnlyList<Expression> expressions) =>
-                BuilderFunc(expressions);
 
             public override string ToString() =>
                 $"{Method}({string.Join(", ", ParameterTypes.Select(t => t.Name))})";
