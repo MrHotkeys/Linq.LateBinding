@@ -1,5 +1,6 @@
 ﻿using System;
 
+using MrHotkeys.Linq.LateBinding.Dto;
 using MrHotkeys.Linq.LateBinding.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding

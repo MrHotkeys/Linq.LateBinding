@@ -1,6 +1,6 @@
 using System;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class DtoPropertyDefinition
     {

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using MrHotkeys.Linq.LateBinding.Dto;
 using MrHotkeys.Linq.LateBinding.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding
