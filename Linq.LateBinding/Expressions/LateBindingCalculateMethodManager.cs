@@ -45,6 +45,16 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return this;
         }
 
+        public LateBindingCalculateMethodManager Define<TOut>(string method, Expression<Func<TOut>> builderExpr)
+        {
+            if (method is null)
+                throw new ArgumentNullException(nameof(method));
+            if (builderExpr is null)
+                throw new ArgumentNullException(nameof(builderExpr));
+
+            return Define(method, builderExpr as LambdaExpression);
+        }
+
         public LateBindingCalculateMethodManager Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
         {
             if (method is null)
