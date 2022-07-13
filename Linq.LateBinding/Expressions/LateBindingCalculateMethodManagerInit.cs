@@ -26,6 +26,8 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             InitString(calcManager);
 
             InitEnumerable(calcManager);
+
+            InitDateTime(calcManager);
         }
 
         public static void InitMath<T>(ILateBindingCalculateMethodManager calcManager)
@@ -177,6 +179,53 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 .Define("and", (bool left, bool right) => left && right)
                 .Define("or", (bool left, bool right) => left || right)
                 .Define("xor", (bool left, bool right) => left ^ right);
+        }
+
+        public static void InitDateTime(ILateBindingCalculateMethodManager calcManager)
+        {
+            calcManager
+                .Define("==", (DateTime left, DateTime right) => left == right)
+                .Define("!=", (DateTime left, DateTime right) => left != right)
+                .Define(">", (DateTime left, DateTime right) => left > right)
+                .Define(">=", (DateTime left, DateTime right) => left >= right)
+                .Define("<", (DateTime left, DateTime right) => left < right)
+                .Define("<=", (DateTime left, DateTime right) => left <= right)
+                .Define("dateadd", exprs =>
+                {
+                    if (exprs[0] is not ConstantExpression intervalExpr)
+                        throw new InvalidOperationException();
+                    var interval = ((string)intervalExpr.Value).ToLower();
+
+                    // Get the name and parameter type for the correct DateTime.Add* method based off the interval
+                    var (addMethodName, addMethodParameterType) = interval switch
+                    {
+                        "millisecond" => (nameof(DateTime.AddMilliseconds), typeof(double)),
+                        "second" => (nameof(DateTime.AddSeconds), typeof(double)),
+                        "minute" => (nameof(DateTime.AddMinutes), typeof(double)),
+                        "hour" => (nameof(DateTime.AddHours), typeof(double)),
+                        "day" => (nameof(DateTime.AddDays), typeof(double)),
+                        "month" => (nameof(DateTime.AddMonths), typeof(int)),
+                        "year" => (nameof(DateTime.AddYears), typeof(int)),
+                        _ => throw new InvalidOperationException(),
+                    };
+
+                    var addMethod = typeof(DateTime)
+                        .GetMethod(
+                            name: addMethodName,
+                            genericParameterCount: 0,
+                            bindingAttr: BindingFlags.Public | BindingFlags.Instance,
+                            binder: Type.DefaultBinder,
+                            callConvention: CallingConventions.Standard,
+                            types: new[] { addMethodParameterType },
+                            modifiers: null)
+                        ?? throw new InvalidOperationException();
+
+                    var valueExpr = exprs[1].Type == addMethodParameterType ?
+                        exprs[1] :
+                        Expression.Convert(exprs[1], addMethodParameterType);
+
+                    return Expression.Call(exprs[2], addMethod, valueExpr);
+                }, new[] { typeof(string), typeof(int), typeof(DateTime) }, true);
         }
     }
 }
