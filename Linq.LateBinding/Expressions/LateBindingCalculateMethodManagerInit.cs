@@ -67,14 +67,6 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                     return true;
                 })
                 .SingleOrDefault();
-            // .GetMethod(
-            //     name: name,
-            //     genericParameterCount: 0,
-            //     bindingAttr: BindingFlags.Public | BindingFlags.Static,
-            //     binder: Type.DefaultBinder,
-            //     callConvention: CallingConventions.Standard,
-            //     types: args,
-            //     modifiers: null);
 
             var absMethod = GetMathMethod(nameof(Math.Abs), argsT1);
             if (absMethod is not null)
@@ -113,14 +105,23 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
         public static void InitString(ILateBindingCalculateMethodManager calcManager)
         {
             calcManager
+                .Define("==", (string left, string right) => left == right)
+                .Define("!=", (string left, string right) => left != right)
+                .Define("length", (string str) => str.Length)
+                .Define("charat", (string str, int index) => str[index])
+                .Define("contains", (string left, string right) => left.Contains(right))
+                .Define("indexof", (string outer, string inner) => outer.IndexOf(inner))
+                .Define("startswith", (string left, string right) => left.StartsWith(right))
+                .Define("substring", (string str, int startIndex, int length) => str.Substring(startIndex, length))
+                .Define("substring", (string str, int startIndex) => str.Substring(startIndex))
+                .Define("concat", (string left, string right) => left + right)
+                .Define("replace", (string str, string oldValue, string newValue) => str.Replace(oldValue, newValue))
+                .Define("insert", (string outer, int index, string inner) => outer.Insert(index, inner))
                 .Define("trim", (string str) => str.Trim())
                 .Define("ltrim", (string str) => str.TrimStart())
                 .Define("rtrim", (string str) => str.TrimEnd())
-                .Define("==", (string left, string right) => left == right)
-                .Define("!=", (string left, string right) => left != right)
-                .Define("contains", (string left, string right) => left.Contains(right))
-                .Define("startswith", (string left, string right) => left.StartsWith(right))
-                .Define("endswith", (string left, string right) => left.EndsWith(right));
+                .Define("upper", (string str) => str.ToUpper())
+                .Define("lower", (string str) => str.ToLower());
         }
 
         public static void InitEnumerable(ILateBindingCalculateMethodManager calcManager)
