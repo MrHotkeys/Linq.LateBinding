@@ -39,7 +39,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             list.Add(builder);
         }
 
-        public LateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes, bool convertArgs)
+        public ILateBindingCalculateMethodManager Define(string method, Func<IReadOnlyList<Expression>, Expression?> buildFunc, Type[] parameterTypes, bool convertArgs)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -56,7 +56,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return this;
         }
 
-        public LateBindingCalculateMethodManager Define<TOut>(string method, Expression<Func<TOut>> builderExpr)
+        public ILateBindingCalculateMethodManager Define<TOut>(string method, Expression<Func<TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -66,7 +66,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public LateBindingCalculateMethodManager Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
+        public ILateBindingCalculateMethodManager Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -76,7 +76,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public LateBindingCalculateMethodManager Define<T0, T1, TOut>(string method, Expression<Func<T0, T1, TOut>> builderExpr)
+        public ILateBindingCalculateMethodManager Define<T0, T1, TOut>(string method, Expression<Func<T0, T1, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -86,7 +86,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public LateBindingCalculateMethodManager Define<T0, T1, T2, TOut>(string method, Expression<Func<T0, T1, T2, TOut>> builderExpr)
+        public ILateBindingCalculateMethodManager Define<T0, T1, T2, TOut>(string method, Expression<Func<T0, T1, T2, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -96,7 +96,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public LateBindingCalculateMethodManager Define(string method, LambdaExpression builderExpr)
+        public ILateBindingCalculateMethodManager Define(string method, LambdaExpression builderExpr)
         {
             var parameterTypes = builderExpr
                 .Parameters
