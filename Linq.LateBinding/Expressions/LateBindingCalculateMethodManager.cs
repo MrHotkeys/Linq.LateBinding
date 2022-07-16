@@ -25,6 +25,17 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 Builders[builder.Method] = list;
             }
 
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i].ParameterTypes.SequenceEqual(builder.ParameterTypes))
+                {
+                    list.RemoveAt(i);
+                    // TODO: Log removed builder
+
+                    break; // Since matches are removed on add, there shouldn't be more than one
+                }
+            }
+
             list.Add(builder);
         }
 
