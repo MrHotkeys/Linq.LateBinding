@@ -29,7 +29,6 @@ namespace MrHotkeys.Linq.LateBinding
 
                 return _dtoTypeGenerator;
             }
-            set => _dtoTypeGenerator = value ?? throw new ArgumentNullException();
         }
 
         private static ILateBindingCalculateBuilderCollection? _calculateMethods;
@@ -50,7 +49,6 @@ namespace MrHotkeys.Linq.LateBinding
 
                 return _calculateMethods;
             }
-            set => _calculateMethods = value ?? throw new ArgumentNullException();
         }
 
         private static ILateBindingExpressionTreeBuilder? _expressionTreeBuilder;
@@ -63,7 +61,6 @@ namespace MrHotkeys.Linq.LateBinding
 
                 return _expressionTreeBuilder;
             }
-            set => _expressionTreeBuilder = value ?? throw new ArgumentNullException();
         }
 
         public static event EventHandler<CalculateMethodsEventArgs>? DefaultCalculateMethodsConstructing;
@@ -71,6 +68,14 @@ namespace MrHotkeys.Linq.LateBinding
         static LateBindingInit()
         {
             DefaultCalculateMethodsConstructing += (sender, args) => InitializeCalculate(args.CalculateMethods);
+        }
+
+        public static void InitializeStatic(IDtoTypeGenerator dtoTypeGenerator, ILateBindingCalculateBuilderCollection calculateMethods,
+            ILateBindingExpressionTreeBuilder expressionTreeBuilder)
+        {
+            _dtoTypeGenerator = dtoTypeGenerator ?? throw new ArgumentNullException(nameof(dtoTypeGenerator));
+            _calculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
+            _expressionTreeBuilder = expressionTreeBuilder ?? throw new ArgumentNullException(nameof(expressionTreeBuilder));
         }
 
         public static void InitializeCalculate(ILateBindingCalculateBuilderCollection calcs)
