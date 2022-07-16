@@ -184,48 +184,41 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
         public static void InitDateTime(ILateBindingCalculateMethodManager calcManager)
         {
             calcManager
+                .Define("now", () => DateTime.Now)
                 .Define("==", (DateTime left, DateTime right) => left == right)
                 .Define("!=", (DateTime left, DateTime right) => left != right)
                 .Define(">", (DateTime left, DateTime right) => left > right)
                 .Define(">=", (DateTime left, DateTime right) => left >= right)
                 .Define("<", (DateTime left, DateTime right) => left < right)
                 .Define("<=", (DateTime left, DateTime right) => left <= right)
-                .Define("dateadd", exprs =>
-                {
-                    if (exprs[0] is not ConstantExpression intervalExpr)
-                        throw new InvalidOperationException();
-                    var interval = ((string)intervalExpr.Value).ToLower();
+                .Define("add_milliseconds", (DateTime dt, double ms) => dt.AddMilliseconds(ms))
+                .Define("add_seconds", (DateTime dt, double s) => dt.AddSeconds(s))
+                .Define("add_minutes", (DateTime dt, double m) => dt.AddMinutes(m))
+                .Define("add_hours", (DateTime dt, double hr) => dt.AddHours(hr))
+                .Define("add_days", (DateTime dt, double d) => dt.AddDays(d))
+                .Define("add_months", (DateTime dt, int mo) => dt.AddMonths(mo))
+                .Define("add_years", (DateTime dt, int y) => dt.AddYears(y))
+                .Define("diff_milliseconds", (DateTime left, DateTime right) => (left - right).Milliseconds)
+                .Define("diff_seconds", (DateTime left, DateTime right) => (left - right).Seconds)
+                .Define("diff_minutes", (DateTime left, DateTime right) => (left - right).Minutes)
+                .Define("diff_hours", (DateTime left, DateTime right) => (left - right).Hours)
+                .Define("diff_days", (DateTime left, DateTime right) => (left - right).Days)
+                .Define("diff_months", (DateTime left, DateTime right) => DateDiffMonths(left, right))
+                .Define("diff_years", (DateTime left, DateTime right) => DateDiffMonths(left, right) / 12);
+        }
+        private static int DateDiffMonths(DateTime left, DateTime right)
+        {
+            var (start, end, sign) = left >= right ?
+                (right, left, 1) :
+                (left, right, -1);
 
-                    // Get the name and parameter type for the correct DateTime.Add* method based off the interval
-                    var (addMethodName, addMethodParameterType) = interval switch
-                    {
-                        "millisecond" => (nameof(DateTime.AddMilliseconds), typeof(double)),
-                        "second" => (nameof(DateTime.AddSeconds), typeof(double)),
-                        "minute" => (nameof(DateTime.AddMinutes), typeof(double)),
-                        "hour" => (nameof(DateTime.AddHours), typeof(double)),
-                        "day" => (nameof(DateTime.AddDays), typeof(double)),
-                        "month" => (nameof(DateTime.AddMonths), typeof(int)),
-                        "year" => (nameof(DateTime.AddYears), typeof(int)),
-                        _ => throw new InvalidOperationException(),
-                    };
+            var years = end.Year - start.Year;
+            var months = (years * 12) + end.Month - start.Month - 1;
 
-                    var addMethod = typeof(DateTime)
-                        .GetMethod(
-                            name: addMethodName,
-                            genericParameterCount: 0,
-                            bindingAttr: BindingFlags.Public | BindingFlags.Instance,
-                            binder: Type.DefaultBinder,
-                            callConvention: CallingConventions.Standard,
-                            types: new[] { addMethodParameterType },
-                            modifiers: null)
-                        ?? throw new InvalidOperationException();
+            if (end.Day >= start.Day)
+                months++;
 
-                    var valueExpr = exprs[1].Type == addMethodParameterType ?
-                        exprs[1] :
-                        Expression.Convert(exprs[1], addMethodParameterType);
-
-                    return Expression.Call(exprs[2], addMethod, valueExpr);
-                }, new[] { typeof(string), typeof(int), typeof(DateTime) }, true);
+            return months * sign;
         }
     }
 }

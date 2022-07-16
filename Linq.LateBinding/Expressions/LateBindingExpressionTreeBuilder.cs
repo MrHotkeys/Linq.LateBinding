@@ -99,7 +99,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                     .GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(m => (m.MemberType == MemberTypes.Field || m.MemberType == MemberTypes.Property) &&
                         StringComparer.OrdinalIgnoreCase.Equals(m.Name, name))
-                    .Single();
+                    .Single(); // TODO: Catch if member not found and throw
 
                 if (MemberOverrides.TryGetValue(member, out var memberOverride) && (memberOverride.OnlyOnDirect == false || i == split.Length - 1))
                 {
