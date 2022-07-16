@@ -4,6 +4,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linq.LateBinding", "Linq.LateBinding\Linq.LateBinding.csproj", "{06F9743D-D07E-4D5F-8414-62CDAF7F8788}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Linq.LateBinding.EntityFrameworkCore.Sql", "Linq.LateBinding.EntityFrameworkCore.Sql\Linq.LateBinding.EntityFrameworkCore.Sql.csproj", "{F52009AF-2643-494F-92F9-D4712769079F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
