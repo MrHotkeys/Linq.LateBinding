@@ -1,5 +1,4 @@
 using System;
-using MrHotkeys.Linq.LateBinding.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding
 {
@@ -7,9 +6,9 @@ namespace MrHotkeys.Linq.LateBinding
     {
         public bool Ascending { get; }
 
-        public ILateBindingExpression Expression { get; }
+        public ILateBinding Expression { get; }
 
-        public LateBindingOrderBy(bool ascending, ILateBindingExpression expression)
+        public LateBindingOrderBy(bool ascending, ILateBinding expression)
         {
             Ascending = ascending;
             Expression = expression ?? throw new ArgumentNullException(nameof(expression));

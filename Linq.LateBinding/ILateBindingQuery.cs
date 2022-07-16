@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 
-using MrHotkeys.Linq.LateBinding.Expressions;
-
 namespace MrHotkeys.Linq.LateBinding
 {
     public interface ILateBindingQuery
     {
-        public IDictionary<string, ILateBindingExpression>? Select { get; }
+        public IDictionary<string, ILateBinding>? Select { get; }
 
-        public ICollection<ILateBindingExpression>? Where { get; }
+        public ICollection<ILateBinding>? Where { get; }
 
         public IList<LateBindingOrderBy>? OrderBy { get; }
 

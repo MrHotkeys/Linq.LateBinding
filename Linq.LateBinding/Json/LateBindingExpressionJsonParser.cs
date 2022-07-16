@@ -33,7 +33,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
             return query;
         }
 
-        public Dictionary<string, ILateBindingExpression>? ParseQuerySelect(JsonElement selectJson)
+        public Dictionary<string, ILateBinding>? ParseQuerySelect(JsonElement selectJson)
         {
             if (selectJson.ValueKind == JsonValueKind.Null)
                 return null;
@@ -41,7 +41,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
             if (selectJson.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException();
 
-            var select = new Dictionary<string, ILateBindingExpression>();
+            var select = new Dictionary<string, ILateBinding>();
             foreach (var property in selectJson.EnumerateObject())
             {
                 select[property.Name] = ParseExpression(property.Value);
@@ -50,7 +50,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
             return select;
         }
 
-        public List<ILateBindingExpression>? ParseQueryWhere(JsonElement whereJson)
+        public List<ILateBinding>? ParseQueryWhere(JsonElement whereJson)
         {
             if (whereJson.ValueKind == JsonValueKind.Null)
                 return null;
@@ -58,7 +58,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
             if (whereJson.ValueKind != JsonValueKind.Array)
                 throw new ArgumentException();
 
-            var where = new List<ILateBindingExpression>();
+            var where = new List<ILateBinding>();
             foreach (var itemJson in whereJson.EnumerateArray())
             {
                 var expression = ParseExpression(itemJson);
@@ -97,7 +97,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
             return json.GetInt32();
         }
 
-        public ILateBindingExpression ParseExpression(JsonElement json)
+        public ILateBinding ParseExpression(JsonElement json)
         {
             if (json.ValueKind != JsonValueKind.Object)
                 throw new ArgumentException();
@@ -105,41 +105,31 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 throw new ArgumentException();
             if (typeElement.ValueKind != JsonValueKind.String)
                 throw new ArgumentException();
-            if (!Enum.TryParse<LateBindingExpressionType>(typeElement.GetString(), true, out var type))
+            if (!Enum.TryParse<LateBindingTarget>(typeElement.GetString(), true, out var type))
                 throw new ArgumentException();
 
             switch (type)
             {
-                case LateBindingExpressionType.Constant:
+                case LateBindingTarget.Constant:
                     return ParseConstantExpression(json);
-                case LateBindingExpressionType.Field:
+                case LateBindingTarget.Field:
                     return ParseFieldExpression(json);
-                case LateBindingExpressionType.Calculate:
+                case LateBindingTarget.Calculate:
                     return ParseCalculateExpression(json);
                 default:
                     throw new InvalidOperationException();
             }
         }
 
-        private ILateBindingExpression ParseConstantExpression(JsonElement json)
+        private ILateBinding ParseConstantExpression(JsonElement json)
         {
             if (!json.TryGetProperty("value", StringComparer.OrdinalIgnoreCase, out var valueElement))
                 throw new ArgumentException();
 
-            var value = valueElement.ValueKind switch
-            {
-                JsonValueKind.False => false,
-                JsonValueKind.True => true,
-                JsonValueKind.Number => valueElement.GetNumberBoxed(),
-                JsonValueKind.String => valueElement.GetString(),
-                JsonValueKind.Null => null,
-                _ => throw new ArgumentException(),
-            };
-
-            return new ConstantLateBindingExpression(value);
+            return new LateBindingToConstantJson(valueElement);
         }
 
-        private ILateBindingExpression ParseFieldExpression(JsonElement json)
+        private ILateBinding ParseFieldExpression(JsonElement json)
         {
             if (!json.TryGetProperty("field", StringComparer.OrdinalIgnoreCase, out var fieldElement))
                 throw new ArgumentException();
@@ -148,10 +138,10 @@ namespace MrHotkeys.Linq.LateBinding.Json
             if (field is null)
                 throw new ArgumentException();
 
-            return new FieldLateBindingExpression(field);
+            return new LateBindingToField(field);
         }
 
-        private ILateBindingExpression ParseCalculateExpression(JsonElement json)
+        private ILateBinding ParseCalculateExpression(JsonElement json)
         {
             if (!json.TryGetProperty("method", StringComparer.OrdinalIgnoreCase, out var methodElement))
                 throw new ArgumentException();
@@ -166,7 +156,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 .EnumerateArray()
                 .Select(ParseExpression);
 
-            return new CalculateLateBindingExpression(method, args);
+            return new LateBindingToCalculate(method, args);
         }
 
         public LateBindingOrderBy ParseOrderBy(JsonElement orderByJson)

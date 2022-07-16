@@ -5,49 +5,113 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace MrHotkeys.Linq.LateBinding.Expressions
+using MrHotkeys.Linq.LateBinding.Dto;
+using MrHotkeys.Linq.LateBinding.Expressions;
+
+namespace MrHotkeys.Linq.LateBinding
 {
-    public static class LateBindingCalculateMethodManagerInit
+    public static class LateBindingInit
     {
-        public static void Init(ILateBindingCalculateMethodManager calcManager)
+
+        private static IDtoTypeGenerator? _dtoTypeGenerator;
+        public static IDtoTypeGenerator DtoTypeGenerator
         {
-            InitMath<sbyte>(calcManager);
-            InitMath<byte>(calcManager);
-            InitMath<short>(calcManager);
-            InitMath<ushort>(calcManager);
-            InitMath<int>(calcManager);
-            InitMath<uint>(calcManager);
-            InitMath<long>(calcManager);
-            InitMath<ulong>(calcManager);
-            InitMath<float>(calcManager);
-            InitMath<double>(calcManager);
-            InitMath<decimal>(calcManager);
+            get
+            {
+                if (_dtoTypeGenerator is null)
+                {
+                    var actualGenerator = new DtoTypeGenerator();
+                    var resettingWrapper = new SelfResettingDtoTypeGenerator(actualGenerator, 100);
+                    var cachingWrapper = new CachingDtoTypeGenerator(resettingWrapper); // This needs to come after the resetting wrapper!
 
-            InitString(calcManager);
+                    _dtoTypeGenerator = cachingWrapper;
+                }
 
-            InitEnumerable(calcManager);
-
-            InitDateTime(calcManager);
+                return _dtoTypeGenerator;
+            }
+            set => _dtoTypeGenerator = value ?? throw new ArgumentNullException();
         }
 
-        public static void InitMath<T>(ILateBindingCalculateMethodManager calcManager)
+        private static ILateBindingCalculateBuilderCollection? _calculateMethods;
+        public static ILateBindingCalculateBuilderCollection CalculateMethods
+        {
+            get
+            {
+                if (_calculateMethods is null)
+                {
+                    _calculateMethods = new LateBindingCalculateBuilderCollection();
+
+                    if (DefaultCalculateMethodsConstructing is not null)
+                    {
+                        var eventArgs = new CalculateMethodsEventArgs(_calculateMethods);
+                        DefaultCalculateMethodsConstructing.Invoke(null, eventArgs);
+                    }
+                }
+
+                return _calculateMethods;
+            }
+            set => _calculateMethods = value ?? throw new ArgumentNullException();
+        }
+
+        private static ILateBindingExpressionTreeBuilder? _expressionTreeBuilder;
+        public static ILateBindingExpressionTreeBuilder ExpressionTreeBuilder
+        {
+            get
+            {
+                if (_expressionTreeBuilder is null)
+                    _expressionTreeBuilder = new LateBindingExpressionTreeBuilder(CalculateMethods);
+
+                return _expressionTreeBuilder;
+            }
+            set => _expressionTreeBuilder = value ?? throw new ArgumentNullException();
+        }
+
+        public static event EventHandler<CalculateMethodsEventArgs>? DefaultCalculateMethodsConstructing;
+
+        static LateBindingInit()
+        {
+            DefaultCalculateMethodsConstructing += (sender, args) => InitializeCalculate(args.CalculateMethods);
+        }
+
+        public static void InitializeCalculate(ILateBindingCalculateBuilderCollection calcs)
+        {
+            InitializeCalculateMath<sbyte>(calcs);
+            InitializeCalculateMath<byte>(calcs);
+            InitializeCalculateMath<short>(calcs);
+            InitializeCalculateMath<ushort>(calcs);
+            InitializeCalculateMath<int>(calcs);
+            InitializeCalculateMath<uint>(calcs);
+            InitializeCalculateMath<long>(calcs);
+            InitializeCalculateMath<ulong>(calcs);
+            InitializeCalculateMath<float>(calcs);
+            InitializeCalculateMath<double>(calcs);
+            InitializeCalculateMath<decimal>(calcs);
+
+            InitializeCalculateString(calcs);
+
+            InitializeCalculateEnumerable(calcs);
+
+            InitializeCalculateDateTime(calcs);
+        }
+
+        public static void InitializeCalculateMath<T>(ILateBindingCalculateBuilderCollection calcs)
         {
             var argsT1 = new[] { typeof(T) };
             var argsT2 = new[] { typeof(T), typeof(T) };
             var argsT3 = new[] { typeof(T), typeof(T), typeof(T) };
 
-            calcManager
-                .Define("+", argExprs => Expression.Add(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("-", argExprs => Expression.Subtract(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("*", argExprs => Expression.Multiply(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("/", argExprs => Expression.Divide(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("%", argExprs => Expression.Modulo(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("==", argExprs => Expression.Equal(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("!=", argExprs => Expression.NotEqual(argExprs[0], argExprs[1]), argsT2, true)
-                .Define(">", argExprs => Expression.GreaterThan(argExprs[0], argExprs[1]), argsT2, true)
-                .Define(">=", argExprs => Expression.GreaterThanOrEqual(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("<", argExprs => Expression.LessThan(argExprs[0], argExprs[1]), argsT2, true)
-                .Define("<=", argExprs => Expression.LessThanOrEqual(argExprs[0], argExprs[1]), argsT2, true);
+            calcs
+                .Define("+", argsT2, argExprs => Expression.Add(argExprs[0], argExprs[1]))
+                .Define("-", argsT2, argExprs => Expression.Subtract(argExprs[0], argExprs[1]))
+                .Define("*", argsT2, argExprs => Expression.Multiply(argExprs[0], argExprs[1]))
+                .Define("/", argsT2, argExprs => Expression.Divide(argExprs[0], argExprs[1]))
+                .Define("%", argsT2, argExprs => Expression.Modulo(argExprs[0], argExprs[1]))
+                .Define("==", argsT2, argExprs => Expression.Equal(argExprs[0], argExprs[1]))
+                .Define("!=", argsT2, argExprs => Expression.NotEqual(argExprs[0], argExprs[1]))
+                .Define(">", argsT2, argExprs => Expression.GreaterThan(argExprs[0], argExprs[1]))
+                .Define(">=", argsT2, argExprs => Expression.GreaterThanOrEqual(argExprs[0], argExprs[1]))
+                .Define("<", argsT2, argExprs => Expression.LessThan(argExprs[0], argExprs[1]))
+                .Define("<=", argsT2, argExprs => Expression.LessThanOrEqual(argExprs[0], argExprs[1]));
 
             MethodInfo? GetMathMethod(string name, Type[] args) => typeof(Math)
                 .GetMethods()
@@ -72,41 +136,41 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
             var absMethod = GetMathMethod(nameof(Math.Abs), argsT1);
             if (absMethod is not null)
-                calcManager.Define("abs", argExprs => Expression.Call(null, absMethod, argExprs), argsT1, true);
+                calcs.Define("abs", argsT1, argExprs => Expression.Call(null, absMethod, argExprs));
             var signMethod = GetMathMethod(nameof(Math.Sign), argsT1);
             if (absMethod is not null)
-                calcManager.Define("sign", argExprs => Expression.Call(null, signMethod, argExprs), argsT1, true);
+                calcs.Define("sign", argsT1, argExprs => Expression.Call(null, signMethod, argExprs));
             var roundMethod = GetMathMethod(nameof(Math.Round), argsT1);
             if (roundMethod is not null)
-                calcManager.Define("round", argExprs => Expression.Call(null, roundMethod, argExprs), argsT1, true);
+                calcs.Define("round", argsT1, argExprs => Expression.Call(null, roundMethod, argExprs));
             var floorMethod = GetMathMethod(nameof(Math.Floor), argsT1);
             if (floorMethod is not null)
-                calcManager.Define("floor", argExprs => Expression.Call(null, floorMethod, argExprs), argsT1, true);
+                calcs.Define("floor", argsT1, argExprs => Expression.Call(null, floorMethod, argExprs));
             var ceilingMethod = GetMathMethod(nameof(Math.Ceiling), argsT1);
             if (ceilingMethod is not null)
-                calcManager.Define("ceiling", argExprs => Expression.Call(null, ceilingMethod, argExprs), argsT1, true);
+                calcs.Define("ceiling", argsT1, argExprs => Expression.Call(null, ceilingMethod, argExprs));
 
             var powMethod = GetMathMethod(nameof(Math.Pow), argsT2);
             if (powMethod is not null)
-                calcManager.Define("pow", argExprs => Expression.Call(null, powMethod, argExprs), argsT2, true);
+                calcs.Define("pow", argsT2, argExprs => Expression.Call(null, powMethod, argExprs));
             var minMethod = GetMathMethod(nameof(Math.Min), argsT2);
             if (minMethod is not null)
-                calcManager.Define("min", argExprs => Expression.Call(null, minMethod, argExprs), argsT2, true);
+                calcs.Define("min", argsT2, argExprs => Expression.Call(null, minMethod, argExprs));
             var maxMethod = GetMathMethod(nameof(Math.Max), argsT2);
             if (maxMethod is not null)
-                calcManager.Define("max", argExprs => Expression.Call(null, maxMethod, argExprs), argsT2, true);
+                calcs.Define("max", argsT2, argExprs => Expression.Call(null, maxMethod, argExprs));
             var logMethod = GetMathMethod(nameof(Math.Log), argsT2);
             if (logMethod is not null)
-                calcManager.Define("log", argExprs => Expression.Call(null, logMethod, argExprs), argsT2, true);
+                calcs.Define("log", argsT2, argExprs => Expression.Call(null, logMethod, argExprs));
 
             var clampMethod = GetMathMethod(nameof(Math.Clamp), argsT3);
             if (clampMethod is not null)
-                calcManager.Define("clamp", argExprs => Expression.Call(null, clampMethod, argExprs), argsT3, true);
+                calcs.Define("clamp", argsT3, argExprs => Expression.Call(null, clampMethod, argExprs));
         }
 
-        public static void InitString(ILateBindingCalculateMethodManager calcManager)
+        public static void InitializeCalculateString(ILateBindingCalculateBuilderCollection calcs)
         {
-            calcManager
+            calcs
                 .Define("==", (string left, string right) => left == right)
                 .Define("!=", (string left, string right) => left != right)
                 .Define("length", (string str) => str.Length)
@@ -126,20 +190,19 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 .Define("lower", (string str) => str.ToLower());
         }
 
-        public static void InitEnumerable(ILateBindingCalculateMethodManager calcManager)
+        public static void InitializeCalculateEnumerable(ILateBindingCalculateBuilderCollection calcs)
         {
-            calcManager
-                .Define("contains", argExprs =>
+            calcs
+                .Define("contains", new[] { typeof(IEnumerable), typeof(object) }, context =>
                     {
-                        var enumerableExpr = argExprs[0];
+                        var enumerableExpr = context.BuildArgument(0);
                         var enumerableInterfaces = LateBindingHelpers
-                            .GetIEnumerableInterfaces(argExprs[0].Type, true);
+                            .GetIEnumerableInterfaces(enumerableExpr.Type, true);
 
-                        var itemExpr = argExprs[1];
                         foreach (var enumerableInterface in enumerableInterfaces)
                         {
                             var itemType = enumerableInterface.GetGenericArguments().Single();
-                            if (itemExpr.Type.CanCastTo(itemType, implicitOnly: true))
+                            if (context.TryBuildArgumentAs(1, itemType, out var itemExpr))
                             {
                                 var method = LateBindingHelpers.GetIEnumerableMethod((IEnumerable<object> x) => x.Contains(null), itemType);
                                 itemExpr = itemExpr.Type == itemType ?
@@ -150,13 +213,12 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                         }
 
                         return null;
-                    },
-                    new[] { typeof(IEnumerable), typeof(object) }, false)
-                .Define("count", argExprs =>
+                    })
+                .Define("count", new[] { typeof(IEnumerable) }, context =>
                     {
-                        var enumerableExpr = argExprs[0];
+                        var enumerableExpr = context.BuildArgument(0);
                         var enumerableInterface = LateBindingHelpers
-                            .GetIEnumerableInterfaces(argExprs[0].Type, true)
+                            .GetIEnumerableInterfaces(enumerableExpr.Type, true)
                             .FirstOrDefault();
 
                         if (enumerableInterface is null)
@@ -166,13 +228,12 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                         var method = LateBindingHelpers.GetIEnumerableMethod((IEnumerable<object> x) => x.Count(), itemType);
 
                         return Expression.Call(null, method, new[] { enumerableExpr });
-                    },
-                    new[] { typeof(IEnumerable) }, false);
+                    });
         }
 
-        public static void InitBool(ILateBindingCalculateMethodManager calcManager)
+        public static void InitializeCalculateBool(ILateBindingCalculateBuilderCollection calcs)
         {
-            calcManager
+            calcs
                 .Define("!", (bool b) => !b)
                 .Define("==", (bool left, bool right) => left == right)
                 .Define("!=", (bool left, bool right) => left != right)
@@ -181,9 +242,9 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 .Define("xor", (bool left, bool right) => left ^ right);
         }
 
-        public static void InitDateTime(ILateBindingCalculateMethodManager calcManager)
+        public static void InitializeCalculateDateTime(ILateBindingCalculateBuilderCollection calcs)
         {
-            calcManager
+            calcs
                 .Define("now", () => DateTime.Now)
                 .Define("==", (DateTime left, DateTime right) => left == right)
                 .Define("!=", (DateTime left, DateTime right) => left != right)
@@ -206,6 +267,7 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 .Define("diff_months", (DateTime left, DateTime right) => DateDiffMonths(left, right))
                 .Define("diff_years", (DateTime left, DateTime right) => DateDiffMonths(left, right) / 12);
         }
+
         private static int DateDiffMonths(DateTime left, DateTime right)
         {
             var (start, end, sign) = left >= right ?
@@ -219,6 +281,16 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
                 months++;
 
             return months * sign;
+        }
+
+        public sealed class CalculateMethodsEventArgs : EventArgs
+        {
+            public ILateBindingCalculateBuilderCollection CalculateMethods { get; }
+
+            public CalculateMethodsEventArgs(ILateBindingCalculateBuilderCollection calculateMethods)
+            {
+                CalculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
+            }
         }
     }
 }

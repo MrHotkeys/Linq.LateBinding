@@ -6,9 +6,9 @@ namespace MrHotkeys.Linq.LateBinding.Json
 {
     public sealed class JsonQuery : ILateBindingQuery
     {
-        public IDictionary<string, ILateBindingExpression>? Select { get; set; }
+        public IDictionary<string, ILateBinding>? Select { get; set; }
 
-        public ICollection<ILateBindingExpression>? Where { get; set; }
+        public ICollection<ILateBinding>? Where { get; set; }
 
         public IList<LateBindingOrderBy>? OrderBy { get; set; }
 
