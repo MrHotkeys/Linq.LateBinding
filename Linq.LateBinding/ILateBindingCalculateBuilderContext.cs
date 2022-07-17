@@ -12,15 +12,15 @@ namespace MrHotkeys.Linq.LateBinding
 
         public Expression TargetExpr { get; }
 
-        public ILateBindingToCalculate Calculate { get; }
+        public ILateBindingToCalculate CalculateLateBind { get; }
 
         public Expression BuildArgument(int argumentIndex) =>
-            Builder.Build(TargetExpr, Calculate.Arguments[argumentIndex]);
+            Builder.Build(TargetExpr, CalculateLateBind.Arguments[argumentIndex]);
 
         public Expression BuildArgumentAs(int argumentIndex, Type type) =>
-            Builder.BuildAs(TargetExpr, Calculate.Arguments[argumentIndex], type);
+            Builder.BuildAs(TargetExpr, CalculateLateBind.Arguments[argumentIndex], type);
 
         public bool TryBuildArgumentAs(int argumentIndex, Type type, [NotNullWhen(true)] out Expression? expression) =>
-            Builder.TryBuildAs(TargetExpr, Calculate.Arguments[argumentIndex], type, out expression);
+            Builder.TryBuildAs(TargetExpr, CalculateLateBind.Arguments[argumentIndex], type, out expression);
     }
 }

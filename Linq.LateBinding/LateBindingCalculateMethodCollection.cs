@@ -49,11 +49,11 @@ namespace MrHotkeys.Linq.LateBinding
 
             Expression? CallbackFromLateBind(ILateBindingCalculateBuilderContext context)
             {
-                if (context.Calculate.Arguments.Count != parameterTypes.Length)
+                if (context.CalculateLateBind.Arguments.Count != parameterTypes.Length)
                     return null; // TODO: Log a trace/debug
 
-                var argExprs = new Expression[context.Calculate.Arguments.Count];
-                for (var i = 0; i < context.Calculate.Arguments.Count; i++)
+                var argExprs = new Expression[context.CalculateLateBind.Arguments.Count];
+                for (var i = 0; i < context.CalculateLateBind.Arguments.Count; i++)
                 {
                     if (!context.TryBuildArgumentAs(i, parameterTypes[i], out var argExpr))
                         return null; // TODO: Log a trace/debug
@@ -81,7 +81,7 @@ namespace MrHotkeys.Linq.LateBinding
 
             Expression? CallbackWithGuard(ILateBindingCalculateBuilderContext context)
             {
-                if (context.Calculate.Arguments.Count != parameterTypes.Length)
+                if (context.CalculateLateBind.Arguments.Count != parameterTypes.Length)
                     return null; // TODO: Log a trace/debug
 
                 return callback(context);
@@ -140,7 +140,7 @@ namespace MrHotkeys.Linq.LateBinding
 
             Expression? Callback(ILateBindingCalculateBuilderContext context)
             {
-                if (context.Calculate.Arguments.Count != builderExpr.Parameters.Count)
+                if (context.CalculateLateBind.Arguments.Count != builderExpr.Parameters.Count)
                     return null; // TODO: Log a trace/debug
 
                 var visitor = new ParameterExpressionReplaceVisitor();

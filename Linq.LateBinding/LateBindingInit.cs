@@ -12,7 +12,6 @@ namespace MrHotkeys.Linq.LateBinding
 {
     public static class LateBindingInit
     {
-
         private static IDtoTypeGenerator? _dtoTypeGenerator;
         public static IDtoTypeGenerator DtoTypeGenerator
         {

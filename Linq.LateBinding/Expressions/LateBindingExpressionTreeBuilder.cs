@@ -137,18 +137,18 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             }
         }
 
-        private bool TryBuildConstantExpression(Expression targetExpr, ILateBindingToConstant constantLateBinding,
+        private bool TryBuildConstantExpression(Expression targetExpr, ILateBindingToConstant constantLateBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
             if (type is null)
             {
-                var value = constantLateBinding.GetValue();
+                var value = constantLateBind.GetValue();
                 resultExpr = Expression.Constant(value);
                 return true;
             }
             else
             {
-                if (constantLateBinding.TryGetValueAs(type, out var value))
+                if (constantLateBind.TryGetValueAs(type, out var value))
                 {
                     resultExpr = Expression.Constant(value, type); // Need to explicitly specify type in case it's null
                     return true;
@@ -161,10 +161,10 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             }
         }
 
-        private bool TryBuildFieldExpression(Expression targetExpr, ILateBindingToField fieldLateBinding,
+        private bool TryBuildFieldExpression(Expression targetExpr, ILateBindingToField fieldLateBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
-            var split = fieldLateBinding
+            var split = fieldLateBind
                 .Field
                 .Split(".");
             var currentExpr = targetExpr;
@@ -191,15 +191,12 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return TryBuildConvertIfNeeded(currentExpr, type, out resultExpr);
         }
 
-        private bool TryBuildCalculateExpression(Expression targetExpr, ILateBindingToCalculate calculateLateBinding,
+        private bool TryBuildCalculateExpression(Expression targetExpr, ILateBindingToCalculate calculateLateBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
-            if (calculateLateBinding.Method == "contains" && calculateLateBinding.Arguments[0].ToString() == "[roles]")
-            { }
-
-            var context = new BuildContext(this, targetExpr, calculateLateBinding);
-            var builders = CalculateMethods.GetBuilders(calculateLateBinding.Method);
-            var parameterExprs = new Expression[calculateLateBinding.Arguments.Count];
+            var context = new BuildContext(this, targetExpr, calculateLateBind);
+            var builders = CalculateMethods.GetBuilders(calculateLateBind.Method);
+            var parameterExprs = new Expression[calculateLateBind.Arguments.Count];
             foreach (var builder in builders)
             {
                 var calculateExpr = builder.Build(context);
@@ -242,13 +239,13 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
             public Expression TargetExpr { get; }
 
-            public ILateBindingToCalculate Calculate { get; }
+            public ILateBindingToCalculate CalculateLateBind { get; }
 
-            public BuildContext(ILateBindingExpressionTreeBuilder builder, Expression targetExpr, ILateBindingToCalculate calculate)
+            public BuildContext(ILateBindingExpressionTreeBuilder builder, Expression targetExpr, ILateBindingToCalculate calculateLateBind)
             {
                 Builder = builder ?? throw new ArgumentNullException(nameof(builder));
                 TargetExpr = targetExpr ?? throw new ArgumentNullException(nameof(targetExpr));
-                Calculate = calculate ?? throw new ArgumentNullException(nameof(calculate));
+                CalculateLateBind = calculateLateBind ?? throw new ArgumentNullException(nameof(calculateLateBind));
             }
         }
     }
