@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
-using MrHotkeys.Linq.LateBinding.Expressions;
-
 namespace MrHotkeys.Linq.LateBinding.Json
 {
-    public sealed class LateBindingExpressionJsonParser
+    public sealed class LateBindingJsonParser
     {
-        public LateBindingExpressionJsonParser()
+        public LateBindingJsonParser()
         { }
 
         public JsonQuery ParseQuery(JsonElement json)
@@ -150,13 +148,18 @@ namespace MrHotkeys.Linq.LateBinding.Json
             if (method is null)
                 throw new ArgumentException();
 
-            if (!json.TryGetProperty("args", StringComparer.OrdinalIgnoreCase, out var argsElement))
-                throw new ArgumentException();
-            var args = argsElement
-                .EnumerateArray()
-                .Select(ParseExpression);
+            if (json.TryGetProperty("args", StringComparer.OrdinalIgnoreCase, out var argsElement))
+            {
+                var args = argsElement
+                    .EnumerateArray()
+                    .Select(ParseExpression);
 
-            return new LateBindingToCalculate(method, args);
+                return new LateBindingToCalculate(method, args);
+            }
+            else
+            {
+                return new LateBindingToCalculate(method, Enumerable.Empty<ILateBinding>());
+            }
         }
 
         public LateBindingOrderBy ParseOrderBy(JsonElement orderByJson)
