@@ -7,7 +7,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class CachingDtoTypeGenerator : IDtoTypeGenerator
     {
-        private IDtoTypeGenerator Generator { get; }
+        public IDtoTypeGenerator Generator { get; }
 
         private Dictionary<CacheKey, WeakReference<Type>> DtoTypeCache { get; } = new Dictionary<CacheKey, WeakReference<Type>>();
 

@@ -7,6 +7,44 @@ namespace MrHotkeys.Linq.LateBinding
 {
     internal static class TypeExtensions
     {
+        public static MethodInfo GetMethod(this Type type, string name, int genericParameterCount, BindingFlags bindingAttr, params Type[] types)
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+            if (name is null)
+                throw new ArgumentNullException(nameof(name));
+            if (types is null)
+                throw new ArgumentNullException(nameof(types));
+
+            return type
+                .GetMethod(
+                    name: name,
+                    genericParameterCount: genericParameterCount,
+                    bindingAttr: bindingAttr,
+                    binder: Type.DefaultBinder,
+                    callConvention: CallingConventions.Standard,
+                    types: types,
+                    modifiers: null)
+                ?? throw new InvalidOperationException();
+        }
+
+        public static ConstructorInfo GetConstructor(this Type type, BindingFlags bindingAttr, params Type[] parameterTypes)
+        {
+            if (type is null)
+                throw new ArgumentNullException(nameof(type));
+            if (parameterTypes is null)
+                throw new ArgumentNullException(nameof(parameterTypes));
+
+            return type
+                .GetConstructor(
+                    bindingAttr: bindingAttr,
+                    binder: Type.DefaultBinder,
+                    callConvention: CallingConventions.Standard,
+                    types: parameterTypes,
+                    modifiers: null)
+                ?? throw new InvalidOperationException();
+        }
+
         /// <summary>
         /// Gets whether variables the given type can be set to null.
         /// </summary>

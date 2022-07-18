@@ -25,5 +25,11 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         public override string ToString() =>
             $"{Type.Name} {Name}";
+
+        public void Deconstruct(out string name, out Type type)
+        {
+            name = Name;
+            type = Type;
+        }
     }
 }

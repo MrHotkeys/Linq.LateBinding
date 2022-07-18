@@ -5,7 +5,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class SelfResettingDtoTypeGenerator : IDtoTypeGenerator
     {
-        private IDtoTypeGenerator Generator { get; }
+        public IDtoTypeGenerator Generator { get; }
 
         public int DtoTypeCountThreshold { get; }
 
