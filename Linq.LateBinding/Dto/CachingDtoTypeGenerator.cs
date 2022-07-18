@@ -54,8 +54,26 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 {
                     dtoTypeInfo = Generator.Generate(propertyDefintions);
                     DtoTypeInfoCache[key] = new WeakReference<DtoTypeInfo>(dtoTypeInfo);
+                    dtoTypeInfo.Finalizing += HandleDtoTypeInfoFinalizing;
 
                     return dtoTypeInfo;
+                }
+            }
+        }
+
+        private void HandleDtoTypeInfoFinalizing(object sender, EventArgs args)
+        {
+            var dtoTypeInfo = (DtoTypeInfo)sender;
+            var key = new CacheKey(dtoTypeInfo.PropertyDefinitions);
+
+            // Lock so we don't remove a good reference immediately after finding a bad one because of a race
+            lock (DtoTypeInfoCacheLock)
+            {
+                // Only remove if we find a dead reference or the reference we know is on its way out
+                if (DtoTypeInfoCache.TryGetValue(key, out var infoReference) &&
+                    (!infoReference.TryGetTarget(out var existingInfo) || ReferenceEquals(existingInfo, dtoTypeInfo)))
+                {
+                    DtoTypeInfoCache.Remove(key);
                 }
             }
         }

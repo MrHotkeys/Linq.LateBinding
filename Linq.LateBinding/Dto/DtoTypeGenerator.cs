@@ -96,7 +96,9 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 .ToDictionary(tuple => tuple.Name, tuple => tuple.Property);
             var selectPropertyMapReadOnly = new ReadOnlyDictionary<string, PropertyInfo>(selectPropertyMap);
 
-            return new DtoTypeInfo(dtoType, selectPropertyMapReadOnly);
+            var propertyDefinitionsReadOnly = new ReadOnlyCollection<DtoPropertyDefinition>(propertyDefinitions.ToList());
+
+            return new DtoTypeInfo(dtoType, selectPropertyMapReadOnly, propertyDefinitionsReadOnly);
         }
 
         private FieldBuilder BuildPropertyNamesField(TypeBuilder dtoTypeBuilder)
