@@ -149,13 +149,15 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 {
                     var property = properties[propertyName];
 
+                    il.Emit(OpCodes.Ldarg_2);
+
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Call, property.GetMethod);
 
                     if (property.PropertyType.IsValueType)
                         il.Emit(OpCodes.Box, property.PropertyType);
 
-                    il.Emit(OpCodes.Starg_S, 1);
+                    il.Emit(OpCodes.Stind_Ref);
                     il.Emit(OpCodes.Ldc_I4_1); // Load true
                     il.Emit(OpCodes.Ret);
 
