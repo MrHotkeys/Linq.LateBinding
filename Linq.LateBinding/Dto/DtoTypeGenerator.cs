@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -15,6 +16,8 @@ namespace MrHotkeys.Linq.LateBinding.Dto
         private ModuleBuilder DtoModuleBuilder { get; set; }
 
         public bool UseDtoDictionaryBaseType { get; set; } = true;
+
+        public string? SelectMemberPrefix { get; set; }
 
         public DtoTypeGenerator()
         {
@@ -32,7 +35,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             DtoModuleBuilder = DtoAssemblyBuilder.DefineDynamicModule("Linq.LateBinding DTO Module");
         }
 
-        public Type Generate(IEnumerable<DtoPropertyDefinition> propertyDefinitions)
+        public DtoTypeInfo Generate(IEnumerable<DtoPropertyDefinition> propertyDefinitions)
         {
             if (propertyDefinitions is null)
                 throw new ArgumentNullException(nameof(propertyDefinitions));
@@ -44,6 +47,9 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                     typeof(DtoDictionaryBase) :
                     null);
 
+            var dtoPropertyAttributeConstructor = typeof(DtoPropertyAttribute)
+                .GetConstructor(new[] { typeof(string) });
+
             var propertiesBuilt = new Dictionary<string, PropertyBuilder>();
             foreach (var (name, type) in propertyDefinitions)
             {
@@ -53,10 +59,15 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 if (propertiesBuilt.ContainsKey(name))
                     throw new ArgumentException($"Contains duplicate property name \"{name}\"!", nameof(propertyDefinitions));
 
-                var property = EmitHelpers.DefineAutoProperty(dtoTypeBuilder, name, type, EmitHelpers.Accessibility.Public, EmitHelpers.Accessibility.Public);
-                propertiesBuilt.Add(property.Name, property);
+                var propertyBuilder = EmitHelpers.DefineAutoProperty(dtoTypeBuilder, SelectMemberPrefix + name, type, EmitHelpers.Accessibility.Public, EmitHelpers.Accessibility.Public);
+
+                var attributeBuilder = new CustomAttributeBuilder(dtoPropertyAttributeConstructor, new[] { name });
+                propertyBuilder.SetCustomAttribute(attributeBuilder);
+
+                propertiesBuilt.Add(name, propertyBuilder);
             }
 
+            Type dtoType;
             if (UseDtoDictionaryBaseType)
             {
                 var propertyNamesField = BuildPropertyNamesField(dtoTypeBuilder);
@@ -65,28 +76,33 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 BuildTryGetValue(dtoTypeBuilder, propertiesBuilt);
                 BuildTrySetValue(dtoTypeBuilder, propertiesBuilt);
 
-                var dtoType = dtoTypeBuilder.CreateType()!;
+                dtoType = dtoTypeBuilder.CreateType()!;
 
                 // Seed the static set of member names
                 var keys = new ReadOnlySetWrapper<string>(propertiesBuilt.Keys.ToHashSet());
                 dtoType
-                    .GetField(propertyNamesField!.Name, BindingFlags.NonPublic | BindingFlags.Static)
+                    .GetField(propertyNamesField.Name, BindingFlags.NonPublic | BindingFlags.Static)
                     .SetValue(null, keys);
-
-                return dtoType;
             }
             else
             {
                 BuildConstructorForObjectBase(dtoTypeBuilder);
 
-                return dtoTypeBuilder.CreateType()!;
+                dtoType = dtoTypeBuilder.CreateType()!;
             }
+
+            var selectPropertyMap = propertiesBuilt
+                .Select(pair => (Name: pair.Key, Property: dtoType.GetProperty(pair.Value.Name)))
+                .ToDictionary(tuple => tuple.Name, tuple => tuple.Property);
+            var selectPropertyMapReadOnly = new ReadOnlyDictionary<string, PropertyInfo>(selectPropertyMap);
+
+            return new DtoTypeInfo(dtoType, selectPropertyMapReadOnly);
         }
 
         private FieldBuilder BuildPropertyNamesField(TypeBuilder dtoTypeBuilder)
         {
             return dtoTypeBuilder.DefineField(
-                fieldName: $"<{nameof(Linq)}.{nameof(LateBinding)}>__PropertyNames",
+                fieldName: $"DTO_KEYS_PropertyNames",
                 type: typeof(ReadOnlySetWrapper<string>),
                 attributes: FieldAttributes.Private | FieldAttributes.Static);
         }
@@ -145,9 +161,9 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             EmitHelpers.EmitStringJumpTable(
                 il: il,
                 caseValues: properties.Keys,
-                emitCaseCallback: (il, propertyName) =>
+                emitCaseCallback: (il, name) =>
                 {
-                    var property = properties[propertyName];
+                    var property = properties[name];
 
                     il.Emit(OpCodes.Ldarg_2);
 
@@ -184,9 +200,9 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             EmitHelpers.EmitStringJumpTable(
                 il: il,
                 caseValues: properties.Keys,
-                emitCaseCallback: (il, propertyName) =>
+                emitCaseCallback: (il, name) =>
                 {
-                    var property = properties[propertyName];
+                    var property = properties[name];
 
                     il.Emit(OpCodes.Ldarg_0);
                     il.Emit(OpCodes.Ldarg_2);

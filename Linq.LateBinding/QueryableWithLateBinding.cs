@@ -81,14 +81,19 @@ namespace MrHotkeys.Linq.LateBinding
                 dtoPropertyDefinitions.Add(dtoPropertyDefinition);
             }
 
-            var dtoType = DtoTypeGenerator.Generate(dtoPropertyDefinitions);
+            var dtoTypeInfo = DtoTypeGenerator.Generate(dtoPropertyDefinitions);
 
-            var dtoConstructor = dtoType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, Type.EmptyTypes, null) ?? throw new InvalidOperationException();
+            var dtoConstructor = dtoTypeInfo
+                .DtoType
+                .GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes)
+                ?? throw new InvalidOperationException();
 
             var selectMemberBindings = new List<MemberBinding>();
             foreach (var (name, expression) in selectMemberExpressions)
             {
-                var property = dtoType.GetProperty(name) ?? throw new InvalidOperationException();
+                if (!dtoTypeInfo.SelectPropertyMap.TryGetValue(name, out var property))
+                    throw new InvalidOperationException();
+
                 var memberBinding = Expression.Bind(property, expression);
                 selectMemberBindings.Add(memberBinding);
             }

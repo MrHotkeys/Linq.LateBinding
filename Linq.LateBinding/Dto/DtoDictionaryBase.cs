@@ -41,7 +41,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 if (key is null)
                     throw new ArgumentNullException(nameof(key));
                 if (!TryGetValue(key, out var value))
-                    throw new KeyNotFoundException($"No member found with name {key}!");
+                    throw new KeyNotFoundException($"No member found for key \"{key}\"!");
 
                 return value;
             }
@@ -50,7 +50,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 if (key is null)
                     throw new ArgumentNullException(nameof(key));
                 if (!TrySetValue(key, value))
-                    throw new KeyNotFoundException($"No member found with name {key}!");
+                    throw new KeyNotFoundException($"No member found for key \"{key}\"!");
             }
         }
 

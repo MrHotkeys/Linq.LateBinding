@@ -19,16 +19,16 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 throw new ArgumentOutOfRangeException(nameof(dtoTypeCountThreshold), dtoTypeCountThreshold, "Must be > 0!");
         }
 
-        public Type Generate(IEnumerable<DtoPropertyDefinition> propertyDefintions)
+        public DtoTypeInfo Generate(IEnumerable<DtoPropertyDefinition> propertyDefintions)
         {
             if (DtoTypeCount >= DtoTypeCountThreshold)
                 Reset();
 
-            var dtoType = Generator.Generate(propertyDefintions);
+            var info = Generator.Generate(propertyDefintions);
 
             DtoTypeCount++;
 
-            return dtoType;
+            return info;
         }
 
         public void Reset()
