@@ -14,6 +14,9 @@ namespace MrHotkeys.Linq.LateBinding
 
         public ILateBindingCalculateBuilderCollection Add(ILateBindingCalculateMethodBuilder builder)
         {
+            if (builder is null)
+                throw new ArgumentNullException(nameof(builder));
+
             if (!Builders.TryGetValue(builder.Method, out var list))
             {
                 list = new List<ILateBindingCalculateMethodBuilder>();
@@ -32,6 +35,19 @@ namespace MrHotkeys.Linq.LateBinding
             }
 
             list.Add(builder);
+
+            return this;
+        }
+
+        public ILateBindingCalculateBuilderCollection Remove(ILateBindingCalculateMethodBuilder builder)
+        {
+            if (builder is null)
+                throw new ArgumentNullException(nameof(builder));
+
+            if (Builders.TryGetValue(builder.Method, out var list))
+            {
+                list.Remove(builder);
+            }
 
             return this;
         }
@@ -133,6 +149,11 @@ namespace MrHotkeys.Linq.LateBinding
 
         public ILateBindingCalculateBuilderCollection Define(string method, LambdaExpression builderExpr)
         {
+            if (method is null)
+                throw new ArgumentNullException(nameof(method));
+            if (builderExpr is null)
+                throw new ArgumentNullException(nameof(builderExpr));
+
             var parameterTypes = builderExpr
                 .Parameters
                 .Select(p => p.Type)
@@ -160,6 +181,40 @@ namespace MrHotkeys.Linq.LateBinding
 
             var builder = new LateBindingCalculateBuilderFromCallback(method, parameterTypes, Callback);
             return Add(builder);
+        }
+
+        public ILateBindingCalculateBuilderCollection Undefine(string method)
+        {
+            if (method is null)
+                throw new ArgumentNullException(nameof(method));
+
+            Builders.Remove(method);
+
+            return this;
+        }
+
+        public ILateBindingCalculateBuilderCollection Undefine(string method, Type[] parameterTypes)
+        {
+            if (method is null)
+                throw new ArgumentNullException(nameof(method));
+            if (parameterTypes is null)
+                throw new ArgumentNullException(nameof(parameterTypes));
+            if (parameterTypes.Contains(null))
+                throw new ArgumentException("May not contain null!", nameof(parameterTypes));
+
+            if (Builders.TryGetValue(method, out var list))
+            {
+                for (var i = 0; i < list.Count; i++)
+                {
+                    if (list[i].ParameterTypes.SequenceEqual(parameterTypes))
+                    {
+                        list.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+
+            return this;
         }
 
         public IReadOnlyCollection<ILateBindingCalculateMethodBuilder> GetBuilders(string method)
