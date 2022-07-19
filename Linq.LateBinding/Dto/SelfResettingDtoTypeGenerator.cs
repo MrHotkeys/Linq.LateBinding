@@ -1,34 +1,53 @@
 using System;
 using System.Collections.Generic;
 
+using Microsoft.Extensions.Logging;
+
 namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class SelfResettingDtoTypeGenerator : IDtoTypeGenerator
     {
+        private ILogger Logger { get; }
+
         public IDtoTypeGenerator Generator { get; }
 
-        public int DtoTypeCountThreshold { get; }
+        private int _dtoTypeCountThreshold = 100;
+        public int DtoTypeCountThreshold
+        {
+            get => _dtoTypeCountThreshold;
+            set
+            {
+                if (value <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(DtoTypeCountThreshold), "Must be > 1!");
+                _dtoTypeCountThreshold = value;
+
+                CheckIfResetNeeded();
+            }
+        }
 
         public int DtoTypeCount { get; private set; } = 0;
 
-        public SelfResettingDtoTypeGenerator(IDtoTypeGenerator generator, int dtoTypeCountThreshold)
+        public SelfResettingDtoTypeGenerator(ILogger<SelfResettingDtoTypeGenerator> logger, IDtoTypeGenerator generator)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Generator = generator ?? throw new ArgumentNullException(nameof(generator));
-            DtoTypeCountThreshold = dtoTypeCountThreshold > 0 ?
-                dtoTypeCountThreshold :
-                throw new ArgumentOutOfRangeException(nameof(dtoTypeCountThreshold), dtoTypeCountThreshold, "Must be > 0!");
         }
 
         public DtoTypeInfo Generate(IEnumerable<DtoPropertyDefinition> propertyDefintions)
         {
-            if (DtoTypeCount >= DtoTypeCountThreshold)
-                Reset();
+            CheckIfResetNeeded();
 
             var info = Generator.Generate(propertyDefintions);
 
             DtoTypeCount++;
 
             return info;
+        }
+
+        private void CheckIfResetNeeded()
+        {
+            if (DtoTypeCount >= DtoTypeCountThreshold)
+                Reset();
         }
 
         public void Reset()

@@ -5,6 +5,10 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 using MrHotkeys.Linq.LateBinding.Dto;
 using MrHotkeys.Linq.LateBinding.Expressions;
 
@@ -12,19 +16,76 @@ namespace MrHotkeys.Linq.LateBinding
 {
     public static class LateBindingInit
     {
+        private static IServiceProvider? _serviceProvider;
+        public static IServiceProvider ServiceProvider
+        {
+            get
+            {
+                if (_serviceProvider is null)
+                {
+                    _serviceProvider = new ServiceCollection()
+                        .AddLogging(c => c.AddProvider(NullLoggerProvider.Instance))
+                        .AddSingleton<IDtoTypeGenerator, CachingDtoTypeGenerator>(sp =>
+                        {
+                            var actualGeneratorLogger = sp.GetRequiredService<ILogger<DtoTypeGenerator>>();
+                            var actualGenerator = new DtoTypeGenerator(actualGeneratorLogger);
+
+                            var resettingWrapperLogger = sp.GetRequiredService<ILogger<SelfResettingDtoTypeGenerator>>();
+                            var resettingWrapper = new SelfResettingDtoTypeGenerator(resettingWrapperLogger, actualGenerator);
+
+                            var cachingWrapperLogger = sp.GetRequiredService<ILogger<CachingDtoTypeGenerator>>();
+                            var cachingWrapper = new CachingDtoTypeGenerator(cachingWrapperLogger, resettingWrapper); // This needs to come after the resetting wrapper!
+
+                            return cachingWrapper;
+                        })
+                        .AddSingleton<ILateBindingCalculateBuilderCollection, LateBindingCalculateBuilderCollection>(sp =>
+                        {
+                            var calculateMethodsLogger = sp.GetRequiredService<ILogger<LateBindingCalculateBuilderCollection>>();
+                            var calculateMethods = new LateBindingCalculateBuilderCollection(calculateMethodsLogger);
+
+                            if (DefaultCalculateMethodsConstructing is not null)
+                            {
+                                var eventArgs = new CalculateMethodsEventArgs(calculateMethods);
+                                DefaultCalculateMethodsConstructing.Invoke(null, eventArgs);
+                            }
+
+                            return calculateMethods;
+                        })
+                        .AddSingleton<ILateBindingExpressionTreeBuilder, LateBindingExpressionTreeBuilder>()
+                        .BuildServiceProvider();
+                }
+
+                return _serviceProvider;
+            }
+            set
+            {
+                _serviceProvider = value ?? throw new ArgumentNullException(nameof(ServiceProvider));
+                _loggerFactory = null;
+                _dtoTypeGenerator = null;
+                _calculateMethods = null;
+                _expressionTreeBuilder = null;
+            }
+        }
+
+        private static ILoggerFactory? _loggerFactory;
+        public static ILoggerFactory LoggerFactory
+        {
+            get
+            {
+                if (_loggerFactory is null)
+                    _loggerFactory = ServiceProvider.GetRequiredService<ILoggerFactory>();
+
+                return _loggerFactory;
+            }
+        }
+
         private static IDtoTypeGenerator? _dtoTypeGenerator;
         public static IDtoTypeGenerator DtoTypeGenerator
         {
             get
             {
                 if (_dtoTypeGenerator is null)
-                {
-                    var actualGenerator = new DtoTypeGenerator();
-                    var resettingWrapper = new SelfResettingDtoTypeGenerator(actualGenerator, 100);
-                    var cachingWrapper = new CachingDtoTypeGenerator(resettingWrapper); // This needs to come after the resetting wrapper!
-
-                    _dtoTypeGenerator = cachingWrapper;
-                }
+                    _dtoTypeGenerator = ServiceProvider.GetRequiredService<IDtoTypeGenerator>();
 
                 return _dtoTypeGenerator;
             }
@@ -36,15 +97,7 @@ namespace MrHotkeys.Linq.LateBinding
             get
             {
                 if (_calculateMethods is null)
-                {
-                    _calculateMethods = new LateBindingCalculateBuilderCollection();
-
-                    if (DefaultCalculateMethodsConstructing is not null)
-                    {
-                        var eventArgs = new CalculateMethodsEventArgs(_calculateMethods);
-                        DefaultCalculateMethodsConstructing.Invoke(null, eventArgs);
-                    }
-                }
+                    _calculateMethods = ServiceProvider.GetRequiredService<ILateBindingCalculateBuilderCollection>();
 
                 return _calculateMethods;
             }
@@ -56,7 +109,7 @@ namespace MrHotkeys.Linq.LateBinding
             get
             {
                 if (_expressionTreeBuilder is null)
-                    _expressionTreeBuilder = new LateBindingExpressionTreeBuilder(CalculateMethods);
+                    _expressionTreeBuilder = ServiceProvider.GetRequiredService<ILateBindingExpressionTreeBuilder>();
 
                 return _expressionTreeBuilder;
             }
@@ -67,14 +120,6 @@ namespace MrHotkeys.Linq.LateBinding
         static LateBindingInit()
         {
             DefaultCalculateMethodsConstructing += (sender, args) => InitializeCalculate(args.CalculateMethods);
-        }
-
-        public static void InitializeStatic(IDtoTypeGenerator dtoTypeGenerator, ILateBindingCalculateBuilderCollection calculateMethods,
-            ILateBindingExpressionTreeBuilder expressionTreeBuilder)
-        {
-            _dtoTypeGenerator = dtoTypeGenerator ?? throw new ArgumentNullException(nameof(dtoTypeGenerator));
-            _calculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
-            _expressionTreeBuilder = expressionTreeBuilder ?? throw new ArgumentNullException(nameof(expressionTreeBuilder));
         }
 
         public static void InitializeCalculate(ILateBindingCalculateBuilderCollection calcs)

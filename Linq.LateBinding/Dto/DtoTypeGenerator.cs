@@ -5,10 +5,14 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
+using Microsoft.Extensions.Logging;
+
 namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class DtoTypeGenerator : IDtoTypeGenerator
     {
+        private ILogger Logger { get; }
+
         public string DtoAssemblyName { get; set; }
 
         private AssemblyBuilder DtoAssemblyBuilder { get; set; }
@@ -19,8 +23,9 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         public string? SelectMemberPrefix { get; set; }
 
-        public DtoTypeGenerator()
+        public DtoTypeGenerator(ILogger<DtoTypeGenerator> logger)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Reset();
         }
 

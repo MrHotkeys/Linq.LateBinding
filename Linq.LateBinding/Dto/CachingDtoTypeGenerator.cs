@@ -3,18 +3,23 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
+using Microsoft.Extensions.Logging;
+
 namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class CachingDtoTypeGenerator : IDtoTypeGenerator
     {
+        private ILogger Logger { get; }
+
         public IDtoTypeGenerator Generator { get; }
 
         private Dictionary<CacheKey, WeakReference<DtoTypeInfo>> DtoTypeInfoCache { get; } = new Dictionary<CacheKey, WeakReference<DtoTypeInfo>>();
 
         private object DtoTypeInfoCacheLock { get; } = new object();
 
-        public CachingDtoTypeGenerator(IDtoTypeGenerator generator)
+        public CachingDtoTypeGenerator(ILogger<CachingDtoTypeGenerator> logger, IDtoTypeGenerator generator)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Generator = generator ?? throw new ArgumentNullException(nameof(generator));
         }
 

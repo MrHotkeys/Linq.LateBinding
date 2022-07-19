@@ -5,16 +5,21 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using Microsoft.Extensions.Logging;
+
 namespace MrHotkeys.Linq.LateBinding.Expressions
 {
     public sealed class LateBindingExpressionTreeBuilder : ILateBindingExpressionTreeBuilder
     {
+        private ILogger Logger { get; }
+
         private Dictionary<MemberInfo, MemberOverrideDefinition> MemberOverrides { get; set; } = new Dictionary<MemberInfo, MemberOverrideDefinition>();
 
         private ILateBindingCalculateBuilderCollection CalculateMethods { get; }
 
-        public LateBindingExpressionTreeBuilder(ILateBindingCalculateBuilderCollection calculateMethods)
+        public LateBindingExpressionTreeBuilder(ILogger<LateBindingExpressionTreeBuilder> logger, ILateBindingCalculateBuilderCollection calculateMethods)
         {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             CalculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
         }
 

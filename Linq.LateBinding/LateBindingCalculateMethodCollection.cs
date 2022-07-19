@@ -3,14 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
+using Microsoft.Extensions.Logging;
+
 using MrHotkeys.Linq.LateBinding.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding
 {
     public sealed class LateBindingCalculateBuilderCollection : ILateBindingCalculateBuilderCollection
     {
+        private ILogger Logger { get; }
+
         private Dictionary<string, List<ILateBindingCalculateMethodBuilder>> Builders =
             new Dictionary<string, List<ILateBindingCalculateMethodBuilder>>(StringComparer.OrdinalIgnoreCase);
+
+        public LateBindingCalculateBuilderCollection(ILogger<LateBindingCalculateBuilderCollection> logger)
+        {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
         public ILateBindingCalculateBuilderCollection Add(ILateBindingCalculateMethodBuilder builder)
         {
