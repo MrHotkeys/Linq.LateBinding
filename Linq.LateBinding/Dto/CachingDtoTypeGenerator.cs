@@ -13,7 +13,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         public IDtoTypeGenerator Generator { get; }
 
-        private Dictionary<CacheKey, WeakReference<DtoTypeInfo>> DtoTypeInfoCache { get; } = new Dictionary<CacheKey, WeakReference<DtoTypeInfo>>();
+        private Dictionary<CacheKey, DtoTypeInfo.Weak> DtoTypeInfoCache { get; } = new Dictionary<CacheKey, DtoTypeInfo.Weak>();
 
         private object DtoTypeInfoCacheLock { get; } = new object();
 
@@ -34,12 +34,20 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         private bool TryGetDtoType(CacheKey key, [NotNullWhen(true)] out DtoTypeInfo? info)
         {
-            if (DtoTypeInfoCache.TryGetValue(key, out var infoReference) && infoReference.TryGetTarget(out info))
+            if (DtoTypeInfoCache.TryGetValue(key, out var infoWeak) && infoWeak.TryGetDtoTypeInfo(out info))
             {
                 return true;
             }
             else
             {
+                if (Logger.IsEnabled(LogLevel.Trace))
+                {
+                    if (infoWeak is null)
+                        Logger.LogTrace($"No DTO Type found in cache for {key}.");
+                    else
+                        Logger.LogTrace($"Found dead DTO Type reference in cache for {key}.");
+                }
+
                 info = default;
                 return false;
             }
@@ -47,37 +55,49 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         private DtoTypeInfo GenerateAndCache(CacheKey key, IEnumerable<DtoPropertyDefinition> propertyDefintions)
         {
+            if (Logger.IsEnabled(LogLevel.Trace))
+                Logger.LogTrace($"Entering lock to generate DTO Type for {key}.");
+
             lock (DtoTypeInfoCacheLock)
             {
                 // Now that we're inside the lock, we'll check the cache again, and the weak
                 // reference returned, to see if something else refreshed the cache first
-                if (TryGetDtoType(key, out var dtoTypeInfo))
+                if (TryGetDtoType(key, out var info))
                 {
-                    return dtoTypeInfo;
+                    if (Logger.IsEnabled(LogLevel.Trace))
+                        Logger.LogTrace($"Aborted generating DTO Type (exists after lock) for {key}.");
+
+                    return info;
                 }
                 else
                 {
-                    dtoTypeInfo = Generator.Generate(propertyDefintions);
-                    DtoTypeInfoCache[key] = new WeakReference<DtoTypeInfo>(dtoTypeInfo);
-                    dtoTypeInfo.Finalizing += HandleDtoTypeInfoFinalizing;
+                    if (Logger.IsEnabled(LogLevel.Debug))
+                        Logger.LogDebug($"Generating DTO Type for {key}.");
 
-                    return dtoTypeInfo;
+                    info = Generator.Generate(propertyDefintions);
+                    var infoWeak = info.ToWeak();
+                    DtoTypeInfoCache[key] = infoWeak;
+                    infoWeak.DtoTypeFinalizing += HandleDtoTypeInfoFinalizing;
+
+                    return info;
                 }
             }
         }
 
         private void HandleDtoTypeInfoFinalizing(object sender, EventArgs args)
         {
-            var dtoTypeInfo = (DtoTypeInfo)sender;
-            var key = new CacheKey(dtoTypeInfo.PropertyDefinitions);
+            var infoWeak = (DtoTypeInfo.Weak)sender;
+            var key = new CacheKey(infoWeak.PropertyDefinitions);
 
             // Lock so we don't remove a good reference immediately after finding a bad one because of a race
             lock (DtoTypeInfoCacheLock)
             {
                 // Only remove if we find a dead reference or the reference we know is on its way out
-                if (DtoTypeInfoCache.TryGetValue(key, out var infoReference) &&
-                    (!infoReference.TryGetTarget(out var existingInfo) || ReferenceEquals(existingInfo, dtoTypeInfo)))
+                if (DtoTypeInfoCache.TryGetValue(key, out var existingInfoWeak) && ReferenceEquals(existingInfoWeak, infoWeak))
                 {
+                    if (Logger.IsEnabled(LogLevel.Debug))
+                        Logger.LogDebug($"Removing dead reference to DTO Type \"{infoWeak.DtoTypeFullName}\" for {key}.");
+
                     DtoTypeInfoCache.Remove(key);
                 }
             }

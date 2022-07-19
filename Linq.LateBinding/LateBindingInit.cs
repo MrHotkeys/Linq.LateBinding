@@ -23,7 +23,7 @@ namespace MrHotkeys.Linq.LateBinding
             {
                 if (_serviceProvider is null)
                 {
-                    _serviceProvider = new ServiceCollection()
+                    var serviceCollection = new ServiceCollection()
                         .AddLogging(c => c.AddProvider(NullLoggerProvider.Instance))
                         .AddSingleton<IDtoTypeGenerator, CachingDtoTypeGenerator>(sp =>
                         {
@@ -51,8 +51,15 @@ namespace MrHotkeys.Linq.LateBinding
 
                             return calculateMethods;
                         })
-                        .AddSingleton<ILateBindingExpressionTreeBuilder, LateBindingExpressionTreeBuilder>()
-                        .BuildServiceProvider();
+                        .AddSingleton<ILateBindingExpressionTreeBuilder, LateBindingExpressionTreeBuilder>();
+
+                    if (DefaultServiceProviderConstructing is not null)
+                    {
+                        var eventArgs = new ServiceCollectionEventArgs(serviceCollection);
+                        DefaultServiceProviderConstructing.Invoke(null, eventArgs);
+                    }
+
+                    return serviceCollection.BuildServiceProvider();
                 }
 
                 return _serviceProvider;
@@ -114,6 +121,8 @@ namespace MrHotkeys.Linq.LateBinding
                 return _expressionTreeBuilder;
             }
         }
+
+        public static event EventHandler<ServiceCollectionEventArgs>? DefaultServiceProviderConstructing;
 
         public static event EventHandler<CalculateMethodsEventArgs>? DefaultCalculateMethodsConstructing;
 
@@ -339,6 +348,16 @@ namespace MrHotkeys.Linq.LateBinding
             public CalculateMethodsEventArgs(ILateBindingCalculateBuilderCollection calculateMethods)
             {
                 CalculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
+            }
+        }
+
+        public sealed class ServiceCollectionEventArgs : EventArgs
+        {
+            public IServiceCollection ServiceCollection { get; }
+
+            public ServiceCollectionEventArgs(IServiceCollection serviceCollection)
+            {
+                ServiceCollection = serviceCollection ?? throw new ArgumentNullException(nameof(serviceCollection));
             }
         }
     }
