@@ -23,11 +23,13 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         public string? SelectMemberPrefix { get; set; }
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public DtoTypeGenerator(ILogger<DtoTypeGenerator> logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Reset();
         }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
         public void Reset()
         {
