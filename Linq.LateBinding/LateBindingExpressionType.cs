@@ -1,6 +1,6 @@
 namespace MrHotkeys.Linq.LateBinding
 {
-    public enum LateBindingTarget
+    public enum LateBindingExpressionType
     {
         Constant,
         Field,

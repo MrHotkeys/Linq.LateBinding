@@ -7,7 +7,7 @@ namespace MrHotkeys.Linq.LateBinding
 {
     public sealed class LateBindingToCalculate : ILateBindingToCalculate
     {
-        public LateBindingTarget Target => LateBindingTarget.Calculate;
+        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Calculate;
 
         public string Method { get; }
 

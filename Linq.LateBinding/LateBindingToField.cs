@@ -2,7 +2,7 @@ namespace MrHotkeys.Linq.LateBinding
 {
     public sealed class LateBindingToField : ILateBindingToField
     {
-        public LateBindingTarget Target => LateBindingTarget.Field;
+        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Field;
 
         public string Field { get; }
 

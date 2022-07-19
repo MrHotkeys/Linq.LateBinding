@@ -110,13 +110,13 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
         private bool TryBuildWithOptionalType(Expression targetExpr, ILateBinding lateBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
-            switch (lateBind.Target)
+            switch (lateBind.ExpressionType)
             {
-                case LateBindingTarget.Constant when lateBind is ILateBindingToConstant constantLateBind:
+                case LateBindingExpressionType.Constant when lateBind is ILateBindingToConstant constantLateBind:
                     return TryBuildConstantExpression(targetExpr, constantLateBind, type, out resultExpr);
-                case LateBindingTarget.Field when lateBind is ILateBindingToField fieldLateBind:
+                case LateBindingExpressionType.Field when lateBind is ILateBindingToField fieldLateBind:
                     return TryBuildFieldExpression(targetExpr, fieldLateBind, type, out resultExpr);
-                case LateBindingTarget.Calculate when lateBind is ILateBindingToCalculate calculateLateBind:
+                case LateBindingExpressionType.Calculate when lateBind is ILateBindingToCalculate calculateLateBind:
                     return TryBuildCalculateExpression(targetExpr, calculateLateBind, type, out resultExpr);
                 default:
                     throw new InvalidOperationException();

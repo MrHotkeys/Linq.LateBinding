@@ -13,7 +13,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
         public JsonQuery ParseQuery(JsonElement json)
         {
             if (json.ValueKind != JsonValueKind.Object)
-                throw new ArgumentException();
+                throw new ArgumentException("Must be an object!", nameof(json));
 
             var query = new JsonQuery();
 
@@ -37,12 +37,12 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 return null;
 
             if (selectJson.ValueKind != JsonValueKind.Object)
-                throw new ArgumentException();
+                throw new ArgumentException("Must be an object, or null!", nameof(selectJson));
 
             var select = new Dictionary<string, ILateBinding>();
             foreach (var property in selectJson.EnumerateObject())
             {
-                select[property.Name] = ParseExpression(property.Value);
+                select[property.Name] = ParseLateBind(property.Value);
             }
 
             return select;
@@ -54,12 +54,12 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 return null;
 
             if (whereJson.ValueKind != JsonValueKind.Array)
-                throw new ArgumentException();
+                throw new ArgumentException("Must be an array, or null!", nameof(whereJson));
 
             var where = new List<ILateBinding>();
             foreach (var itemJson in whereJson.EnumerateArray())
             {
-                var expression = ParseExpression(itemJson);
+                var expression = ParseLateBind(itemJson);
                 where.Add(expression);
             }
 
@@ -72,7 +72,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 return null;
 
             if (orderByJson.ValueKind != JsonValueKind.Array)
-                throw new ArgumentException();
+                throw new ArgumentException("Must be an array, or null!", nameof(orderByJson));
 
             var orderBys = new List<LateBindingOrderBy>();
             foreach (var itemJson in orderByJson.EnumerateArray())
@@ -90,29 +90,31 @@ namespace MrHotkeys.Linq.LateBinding.Json
                 return null;
 
             if (json.ValueKind != JsonValueKind.Number)
-                throw new ArgumentException();
+                throw new ArgumentException("Must be a number, or null!", nameof(json));
 
             return json.GetInt32();
         }
 
-        public ILateBinding ParseExpression(JsonElement json)
+        public ILateBinding ParseLateBind(JsonElement json)
         {
             if (json.ValueKind != JsonValueKind.Object)
-                throw new ArgumentException();
-            if (!json.TryGetProperty("type", StringComparer.OrdinalIgnoreCase, out var typeElement))
-                throw new ArgumentException();
-            if (typeElement.ValueKind != JsonValueKind.String)
-                throw new ArgumentException();
-            if (!Enum.TryParse<LateBindingTarget>(typeElement.GetString(), true, out var type))
-                throw new ArgumentException();
+                throw new ArgumentException("Must be an object!", nameof(json));
+            if (!json.TryGetProperty("expressionType", StringComparer.OrdinalIgnoreCase, out var expressionTypeElement))
+                throw new ArgumentException("Must contain an \"expressionType\" property to describe the type of late binding expression!", nameof(json));
+            if (expressionTypeElement.ValueKind != JsonValueKind.String)
+                throw new ArgumentException("\"expressionType\" must contain a string value!", nameof(json));
 
-            switch (type)
+            var expressionTypeString = expressionTypeElement.GetString();
+            if (!Enum.TryParse<LateBindingExpressionType>(expressionTypeString, true, out var expressionType))
+                throw new ArgumentException($"Unrecognized expression type \"{expressionTypeString}\"!");
+
+            switch (expressionType)
             {
-                case LateBindingTarget.Constant:
+                case LateBindingExpressionType.Constant:
                     return ParseConstantExpression(json);
-                case LateBindingTarget.Field:
+                case LateBindingExpressionType.Field:
                     return ParseFieldExpression(json);
-                case LateBindingTarget.Calculate:
+                case LateBindingExpressionType.Calculate:
                     return ParseCalculateExpression(json);
                 default:
                     throw new InvalidOperationException();
@@ -122,7 +124,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
         private ILateBinding ParseConstantExpression(JsonElement json)
         {
             if (!json.TryGetProperty("value", StringComparer.OrdinalIgnoreCase, out var valueElement))
-                throw new ArgumentException();
+                throw new ArgumentException("Must contain a \"value\" property containing the value of the constant!", nameof(json));
 
             return new LateBindingToConstantJson(valueElement);
         }
@@ -130,11 +132,14 @@ namespace MrHotkeys.Linq.LateBinding.Json
         private ILateBinding ParseFieldExpression(JsonElement json)
         {
             if (!json.TryGetProperty("field", StringComparer.OrdinalIgnoreCase, out var fieldElement))
-                throw new ArgumentException();
+                throw new ArgumentException("Must contain a \"field\" property with the name of the target field on the entity!", nameof(json));
+            if (fieldElement.ValueKind != JsonValueKind.String)
+                throw new ArgumentException("\"field\" must contain a string value!", nameof(json));
+
             var field = fieldElement.GetString();
 
             if (field is null)
-                throw new ArgumentException();
+                throw new InvalidOperationException(); // This shouldn't happen since we checked the value kind
 
             return new LateBindingToField(field);
         }
@@ -142,17 +147,20 @@ namespace MrHotkeys.Linq.LateBinding.Json
         private ILateBinding ParseCalculateExpression(JsonElement json)
         {
             if (!json.TryGetProperty("method", StringComparer.OrdinalIgnoreCase, out var methodElement))
-                throw new ArgumentException();
+                throw new ArgumentException("Must contain a \"method\" property with the name of the target calculate method!", nameof(json));
+            if (methodElement.ValueKind != JsonValueKind.String)
+                throw new ArgumentException("\"method\" must contain a string value!", nameof(json));
+
             var method = methodElement.GetString();
 
             if (method is null)
-                throw new ArgumentException();
+                throw new InvalidOperationException(); // This shouldn't happen since we checked the value kind
 
             if (json.TryGetProperty("args", StringComparer.OrdinalIgnoreCase, out var argsElement))
             {
                 var args = argsElement
                     .EnumerateArray()
-                    .Select(ParseExpression);
+                    .Select(ParseLateBind);
 
                 return new LateBindingToCalculate(method, args);
             }
@@ -165,23 +173,25 @@ namespace MrHotkeys.Linq.LateBinding.Json
         public LateBindingOrderBy ParseOrderBy(JsonElement orderByJson)
         {
             if (orderByJson.ValueKind != JsonValueKind.Object)
-                throw new ArgumentException();
-            if (!orderByJson.TryGetProperty("ascending", StringComparer.OrdinalIgnoreCase, out var ascendingJson))
-                throw new ArgumentException();
+                throw new ArgumentException("Must be an object!", nameof(orderByJson));
 
-            var ascending = ascendingJson.ValueKind switch
+            var ascending = true;
+            if (!orderByJson.TryGetProperty("ascending", StringComparer.OrdinalIgnoreCase, out var ascendingJson))
             {
-                JsonValueKind.True => true,
-                JsonValueKind.False => false,
-                _ => throw new ArgumentException(),
-            };
+                ascending = ascendingJson.ValueKind switch
+                {
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    _ => throw new ArgumentException("\"ascending\" must be either true or false!"),
+                };
+            }
 
             if (!orderByJson.TryGetProperty("expression", StringComparer.OrdinalIgnoreCase, out var expressionJson))
-                throw new ArgumentException();
+                throw new ArgumentException("Must contain a \"expression\" property with the late binding expression used to determine order!", nameof(orderByJson));
             if (expressionJson.ValueKind != JsonValueKind.Object)
-                throw new ArgumentException();
+                throw new ArgumentException("\"expression\" must contain an object value!", nameof(orderByJson));
 
-            var expression = ParseExpression(expressionJson);
+            var expression = ParseLateBind(expressionJson);
 
             return new LateBindingOrderBy(ascending, expression);
         }
