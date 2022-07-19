@@ -36,8 +36,10 @@ namespace MrHotkeys.Linq.LateBinding
             {
                 if (list[i].ParameterTypes.SequenceEqual(builder.ParameterTypes))
                 {
+                    if (Logger.IsEnabled(LogLevel.Debug))
+                        Logger.LogDebug("Overwriting builder for calculate method {method}({parameterTypes}).", builder.Method, GetParameterListStrign(builder.ParameterTypes));
+
                     list.RemoveAt(i);
-                    // TODO: Log removed builder
 
                     break; // Since matches are removed on add, there shouldn't be more than one
                 }
@@ -54,9 +56,7 @@ namespace MrHotkeys.Linq.LateBinding
                 throw new ArgumentNullException(nameof(builder));
 
             if (Builders.TryGetValue(builder.Method, out var list))
-            {
                 list.Remove(builder);
-            }
 
             return this;
         }
@@ -75,13 +75,29 @@ namespace MrHotkeys.Linq.LateBinding
             Expression? CallbackFromLateBind(ILateBindingCalculateBuilderContext context)
             {
                 if (context.CalculateLateBind.Arguments.Count != parameterTypes.Length)
-                    return null; // TODO: Log a trace/debug
+                {
+                    if (Logger.IsEnabled(LogLevel.Trace))
+                    {
+                        Logger.LogTrace("Soft-failing out of builder for calculate method {method}({parameterTypes}): argument count mismatch (expected {expected}, got {actual}).",
+                            method, GetParameterListStrign(parameterTypes), parameterTypes.Length, context.CalculateLateBind.Arguments.Count);
+                    }
+
+                    return null;
+                }
 
                 var argExprs = new Expression[context.CalculateLateBind.Arguments.Count];
                 for (var i = 0; i < context.CalculateLateBind.Arguments.Count; i++)
                 {
                     if (!context.TryBuildArgumentAs(i, parameterTypes[i], out var argExpr))
-                        return null; // TODO: Log a trace/debug
+                    {
+                        if (Logger.IsEnabled(LogLevel.Trace))
+                        {
+                            Logger.LogTrace("Soft-failing out of builder for calculate method {method}({parameterTypes}): argument type mismatch (expected {expected}).",
+                                method, GetParameterListStrign(parameterTypes), parameterTypes[i]);
+                        }
+
+                        return null;
+                    }
 
                     argExprs[i] = argExpr;
                 }
@@ -168,34 +184,26 @@ namespace MrHotkeys.Linq.LateBinding
                 .Select(p => p.Type)
                 .ToArray();
 
-            Expression? Callback(ILateBindingCalculateBuilderContext context)
+            Expression? Callback(IReadOnlyList<Expression> argExprs)
             {
-                if (context.CalculateLateBind.Arguments.Count != builderExpr.Parameters.Count)
-                    return null; // TODO: Log a trace/debug
-
                 var visitor = new ParameterExpressionReplaceVisitor();
 
                 for (var i = 0; i < parameterTypes.Length; i++)
-                {
-                    var parameterExpr = builderExpr.Parameters[i];
-
-                    if (!context.TryBuildArgumentAs(i, parameterTypes[i], out var argExpr))
-                        return null; // TODO: Log a trace/debug
-
-                    visitor.Add(parameterExpr, argExpr);
-                }
+                    visitor.Add(builderExpr.Parameters[i], argExprs[i]);
 
                 return visitor.Visit(builderExpr.Body);
             }
 
-            var builder = new LateBindingCalculateBuilderFromCallback(method, parameterTypes, Callback);
-            return Add(builder);
+            return Define(method, parameterTypes, Callback);
         }
 
         public ILateBindingCalculateBuilderCollection Undefine(string method)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
+
+            if (Logger.IsEnabled(LogLevel.Trace))
+                Logger.LogTrace("Undefining all methods named \"{method}\" ({count} total).", method, Builders.TryGetValue(method, out var list) ? list.Count : 0);
 
             Builders.Remove(method);
 
@@ -215,8 +223,12 @@ namespace MrHotkeys.Linq.LateBinding
             {
                 for (var i = 0; i < list.Count; i++)
                 {
-                    if (list[i].ParameterTypes.SequenceEqual(parameterTypes))
+                    var builder = list[i];
+                    if (builder.ParameterTypes.SequenceEqual(parameterTypes))
                     {
+                        if (Logger.IsEnabled(LogLevel.Trace))
+                            Logger.LogTrace("Undefining method {method}({parameterTypes}).", method, GetParameterListStrign(parameterTypes), parameterTypes[i]);
+
                         list.RemoveAt(i);
                         i--;
                     }
@@ -232,5 +244,8 @@ namespace MrHotkeys.Linq.LateBinding
                 list :
                 Array.Empty<ILateBindingCalculateMethodBuilder>();
         }
+
+        private string GetParameterListStrign(IReadOnlyList<Type> types) =>
+            string.Join(", ", types.Select(t => t.Name));
     }
 }
