@@ -17,9 +17,16 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             get => _dtoTypeCountThreshold;
             set
             {
+                var startValue = _dtoTypeCountThreshold;
                 if (value <= 0)
                     throw new ArgumentOutOfRangeException(nameof(DtoTypeCountThreshold), "Must be > 1!");
                 _dtoTypeCountThreshold = value;
+
+                if (Logger.IsEnabled(LogLevel.Trace))
+                {
+                    Logger.LogDebug($"{nameof(DtoTypeCountThreshold)} updated from {{oldDtoTypeCountThreshold}} to {{newDtoTypeCountThreshold}}",
+                        startValue, DtoTypeCountThreshold);
+                }
 
                 CheckIfResetNeeded();
             }
@@ -47,11 +54,22 @@ namespace MrHotkeys.Linq.LateBinding.Dto
         private void CheckIfResetNeeded()
         {
             if (DtoTypeCount >= DtoTypeCountThreshold)
-                Reset();
+                Reset(false);
         }
 
-        public void Reset()
+        public void Reset() =>
+            Reset(true);
+
+        private void Reset(bool manual)
         {
+            if (Logger.IsEnabled(LogLevel.Debug))
+            {
+                if (manual)
+                    Logger.LogDebug($"Resetting inner DTO generator: {nameof(Reset)} called.");
+                else
+                    Logger.LogDebug("Resetting inner DTO generator: {dtoTypeCountThreshold} count threshold hit.", DtoTypeCountThreshold);
+            }
+
             Generator.Reset();
             DtoTypeCount = 0;
         }
