@@ -28,7 +28,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
 
         public sealed class Weak
         {
-            private WeakReference<DtoTypeContainer> DtoTypeContainerReference { get; }
+            private WeakReference<WeakReferenceContainer<Type>> DtoTypeContainerReference { get; }
 
             public string DtoTypeFullName { get; }
 
@@ -43,8 +43,8 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             {
                 if (dtoType is null)
                     throw new ArgumentNullException(nameof(dtoType));
-                var container = new DtoTypeContainer(dtoType);
-                DtoTypeContainerReference = new WeakReference<DtoTypeContainer>(container);
+                var container = new WeakReferenceContainer<Type>(dtoType);
+                DtoTypeContainerReference = new WeakReference<WeakReferenceContainer<Type>>(container);
                 container.Finalizing += HandleDtoTypeContainerFinalizing;
 
                 DtoTypeFullName = dtoType.FullName;
@@ -62,7 +62,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             {
                 if (DtoTypeContainerReference.TryGetTarget(out var container))
                 {
-                    dtoType = container.DtoType;
+                    dtoType = container.Value;
                     return true;
                 }
                 else
