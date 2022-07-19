@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -51,7 +52,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             if (Logger.IsEnabled(LogLevel.Trace))
             {
                 if (init)
-                    Logger.LogTrace("Creating DTO Assembly {dotAssemblyName}...", newDtoAssemblyName);
+                    Logger.LogTrace("Creating DTO Assembly {newDtoAssemblyName}...", newDtoAssemblyName);
                 else
                     Logger.LogTrace("Resetting, switching DTO Assembly from {oldDtoAssemblyName} to {newDtoAssemblyName}...", oldDtoAssemblyName, newDtoAssemblyName);
             }
@@ -69,7 +70,7 @@ namespace MrHotkeys.Linq.LateBinding.Dto
                 if (Logger.IsEnabled(LogLevel.Debug))
                 {
                     if (init)
-                        Logger.LogDebug("Successfully created DTO Assembly {dtoAssemblyName}.", newDtoAssemblyName);
+                        Logger.LogDebug("Successfully created DTO Assembly {newDtoAssemblyName}.", newDtoAssemblyName);
                     else
                         Logger.LogDebug("Successfully switched DTO Assembly from {oldDtoAssemblyName} to {newDtoAssemblyName}.", oldDtoAssemblyName, newDtoAssemblyName);
                 }
@@ -77,11 +78,23 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             catch (Exception e)
             {
                 if (init)
-                    Logger.LogError(e, "Exception occurred creating DTO Assembly {dtoAssemblyName}.", newDtoAssemblyName);
+                {
+                    Logger.LogError(e, "Exception occurred creating DTO Assembly {newDtoAssemblyName}.", newDtoAssemblyName);
+
+                    if (Debugger.IsAttached)
+                        throw;
+
+                    throw new InvalidOperationException($"Exception occurred creating DTO Assembly {newDtoAssemblyName}.", e);
+                }
                 else
+                {
                     Logger.LogError(e, "Exception occurred switching DTO Assembly from {oldDtoAssemblyName} to {newDtoAssemblyName}.", oldDtoAssemblyName, newDtoAssemblyName);
 
-                throw;
+                    if (Debugger.IsAttached)
+                        throw;
+
+                    throw new InvalidOperationException($"Exception occurred switching DTO Assembly from {oldDtoAssemblyName} to {newDtoAssemblyName}.", e);
+                }
             }
         }
 
@@ -187,7 +200,11 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             catch (Exception e)
             {
                 Logger.LogError(e, "Exception occurred configuring DTO Type {dtoTypeName} in Assembly {dtoAssembly}!", dtoTypeName, dtoModuleBuilder.Assembly.GetName().Name);
-                throw;
+
+                if (Debugger.IsAttached)
+                    throw;
+
+                throw new InvalidOperationException($"Exception occurred configuring DTO Type {dtoTypeName} in Assembly {dtoModuleBuilder.Assembly.GetName().Name}!", e);
             }
         }
 
@@ -208,7 +225,11 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             catch (Exception e)
             {
                 Logger.LogError(e, "Exception occurred creating DTO Type {dtoTypeName} in Assembly {dtoAssembly}!", dtoTypeBuilder.Name, dtoTypeBuilder.Assembly.GetName().Name);
-                throw;
+
+                if (Debugger.IsAttached)
+                    throw;
+                else
+                    throw new InvalidOperationException($"Exception occurred creating DTO Type {dtoTypeBuilder.Name} in Assembly {dtoTypeBuilder.Assembly.GetName().Name}!", e);
             }
         }
 
@@ -386,7 +407,12 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             {
                 Logger.LogError(e, "Exception occurred configuring field {fieldType} {fieldName} for DTO Type {dtoTypeName} in Assembly {dtoAssembly}!",
                     fieldType, fieldName, dtoTypeBuilder.Name, dtoTypeBuilder.Assembly.GetName().Name);
-                throw;
+
+                if (Debugger.IsAttached)
+                    throw;
+
+                throw new InvalidOperationException($"Exception occurred configuring field {fieldType} {fieldName} for " +
+                    $"DTO Type {dtoTypeBuilder.Name} in Assembly {dtoTypeBuilder.Assembly.GetName().Name}!", e);
             }
         }
 
@@ -414,7 +440,12 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             {
                 Logger.LogError(e, "Exception occurred configuring {constructorDescription} for DTO Type {dtoTypeName} in Assembly {dtoAssembly}!",
                     constructorDescription, dtoTypeBuilder.Name, dtoTypeBuilder.Assembly.GetName().Name);
-                throw;
+
+                if (Debugger.IsAttached)
+                    throw;
+
+                throw new InvalidOperationException($"Exception occurred configuring {constructorDescription} for " +
+                    $"DTO Type {dtoTypeBuilder.Name} in Assembly {dtoTypeBuilder.Assembly.GetName().Name}!", e);
             }
         }
 
@@ -442,7 +473,12 @@ namespace MrHotkeys.Linq.LateBinding.Dto
             {
                 Logger.LogError(e, "Exception occurred configuring method {methodName}({parameterTypes}) for DTO Type {dtoTypeName} in Assembly {dtoAssembly}!",
                     methodName, GetParameterTypesString(parameterTypes), dtoTypeBuilder.Name, dtoTypeBuilder.Assembly.GetName().Name);
-                throw;
+
+                if (Debugger.IsAttached)
+                    throw;
+
+                throw new InvalidOperationException($"Exception occurred configuring method {methodName}({parameterTypes}) for " +
+                    $"DTO Type {dtoTypeBuilder.Name} in Assembly {dtoTypeBuilder.Assembly.GetName().Name}!", e);
             }
         }
 
