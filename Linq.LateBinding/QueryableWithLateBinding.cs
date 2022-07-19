@@ -150,7 +150,7 @@ namespace MrHotkeys.Linq.LateBinding
                     throw new ArgumentException("Cannot contain null!", nameof(orderBy));
 
                 var targetParameterExpr = Expression.Parameter(typeof(T));
-                var bodyExpr = ExpressionTreeBuilder.Build(targetParameterExpr, ob.Expression);
+                var bodyExpr = ExpressionTreeBuilder.Build(targetParameterExpr, ob.Binding);
 
                 // Need to call another method to assemble and apply the lambda so we can
                 // do it in a context where the type of the member is a type parameter

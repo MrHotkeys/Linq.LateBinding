@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace MrHotkeys.Linq.LateBinding
 {
-    public interface ILateBindingToCalculate : ILateBinding
+    public interface ILateBindingToCall : ILateBinding
     {
         public string Method { get; }
 

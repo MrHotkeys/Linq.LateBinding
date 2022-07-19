@@ -1,6 +1,6 @@
 namespace MrHotkeys.Linq.LateBinding
 {
-    public interface ILateBindingToField : ILateBinding
+    public interface ILateBindingToEntity : ILateBinding
     {
         public string Field { get; }
     }

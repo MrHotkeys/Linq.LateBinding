@@ -6,15 +6,15 @@ namespace MrHotkeys.Linq.LateBinding
     {
         public bool Ascending { get; }
 
-        public ILateBinding Expression { get; }
+        public ILateBinding Binding { get; }
 
-        public LateBindingOrderBy(bool ascending, ILateBinding expression)
+        public LateBindingOrderBy(bool ascending, ILateBinding binding)
         {
             Ascending = ascending;
-            Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+            Binding = binding ?? throw new ArgumentNullException(nameof(binding));
         }
 
         public override string ToString() =>
-            Expression.ToString() + (Ascending ? " ascending" : " descending");
+            Binding.ToString() + (Ascending ? " ascending" : " descending");
     }
 }

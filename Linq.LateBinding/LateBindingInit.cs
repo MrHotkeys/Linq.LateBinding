@@ -38,18 +38,18 @@ namespace MrHotkeys.Linq.LateBinding
 
                             return cachingWrapper;
                         })
-                        .AddSingleton<ILateBindingCalculateBuilderCollection, LateBindingCalculateBuilderCollection>(sp =>
+                        .AddSingleton<ILateBindingFunctionCollection, LateBindingFunctionCollection>(sp =>
                         {
-                            var calculateMethodsLogger = sp.GetRequiredService<ILogger<LateBindingCalculateBuilderCollection>>();
-                            var calculateMethods = new LateBindingCalculateBuilderCollection(calculateMethodsLogger);
+                            var logger = sp.GetRequiredService<ILogger<LateBindingFunctionCollection>>();
+                            var functions = new LateBindingFunctionCollection(logger);
 
-                            if (DefaultCalculateMethodsConstructing is not null)
+                            if (DefaultFunctionsConstructing is not null)
                             {
-                                var eventArgs = new CalculateMethodsEventArgs(calculateMethods);
-                                DefaultCalculateMethodsConstructing.Invoke(null, eventArgs);
+                                var eventArgs = new FunctionsEventArgs(functions);
+                                DefaultFunctionsConstructing.Invoke(null, eventArgs);
                             }
 
-                            return calculateMethods;
+                            return functions;
                         })
                         .AddSingleton<ILateBindingExpressionTreeBuilder, LateBindingExpressionTreeBuilder>();
 
@@ -69,7 +69,7 @@ namespace MrHotkeys.Linq.LateBinding
                 _serviceProvider = value ?? throw new ArgumentNullException(nameof(ServiceProvider));
                 _loggerFactory = null;
                 _dtoTypeGenerator = null;
-                _calculateMethods = null;
+                _functions = null;
                 _expressionTreeBuilder = null;
             }
         }
@@ -98,15 +98,15 @@ namespace MrHotkeys.Linq.LateBinding
             }
         }
 
-        private static ILateBindingCalculateBuilderCollection? _calculateMethods;
-        public static ILateBindingCalculateBuilderCollection CalculateMethods
+        private static ILateBindingFunctionCollection? _functions;
+        public static ILateBindingFunctionCollection Functions
         {
             get
             {
-                if (_calculateMethods is null)
-                    _calculateMethods = ServiceProvider.GetRequiredService<ILateBindingCalculateBuilderCollection>();
+                if (_functions is null)
+                    _functions = ServiceProvider.GetRequiredService<ILateBindingFunctionCollection>();
 
-                return _calculateMethods;
+                return _functions;
             }
         }
 
@@ -124,41 +124,41 @@ namespace MrHotkeys.Linq.LateBinding
 
         public static event EventHandler<ServiceCollectionEventArgs>? DefaultServiceProviderConstructing;
 
-        public static event EventHandler<CalculateMethodsEventArgs>? DefaultCalculateMethodsConstructing;
+        public static event EventHandler<FunctionsEventArgs>? DefaultFunctionsConstructing;
 
         static LateBindingInit()
         {
-            DefaultCalculateMethodsConstructing += (sender, args) => InitializeCalculate(args.CalculateMethods);
+            DefaultFunctionsConstructing += (sender, args) => InitializeFunctions(args.Functions);
         }
 
-        public static void InitializeCalculate(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeFunctions(ILateBindingFunctionCollection functions)
         {
-            InitializeCalculateMath<sbyte>(calcs);
-            InitializeCalculateMath<byte>(calcs);
-            InitializeCalculateMath<short>(calcs);
-            InitializeCalculateMath<ushort>(calcs);
-            InitializeCalculateMath<int>(calcs);
-            InitializeCalculateMath<uint>(calcs);
-            InitializeCalculateMath<long>(calcs);
-            InitializeCalculateMath<ulong>(calcs);
-            InitializeCalculateMath<float>(calcs);
-            InitializeCalculateMath<double>(calcs);
-            InitializeCalculateMath<decimal>(calcs);
+            InitializeMathFunctions<sbyte>(functions);
+            InitializeMathFunctions<byte>(functions);
+            InitializeMathFunctions<short>(functions);
+            InitializeMathFunctions<ushort>(functions);
+            InitializeMathFunctions<int>(functions);
+            InitializeMathFunctions<uint>(functions);
+            InitializeMathFunctions<long>(functions);
+            InitializeMathFunctions<ulong>(functions);
+            InitializeMathFunctions<float>(functions);
+            InitializeMathFunctions<double>(functions);
+            InitializeMathFunctions<decimal>(functions);
 
-            InitializeCalculateString(calcs);
+            InitializeStringFunctions(functions);
 
-            InitializeCalculateEnumerable(calcs);
+            InitializeEnumerableFunctions(functions);
 
-            InitializeCalculateDateTime(calcs);
+            InitializeDateTimeFunctions(functions);
         }
 
-        public static void InitializeCalculateMath<T>(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeMathFunctions<T>(ILateBindingFunctionCollection functions)
         {
             var argsT1 = new[] { typeof(T) };
             var argsT2 = new[] { typeof(T), typeof(T) };
             var argsT3 = new[] { typeof(T), typeof(T), typeof(T) };
 
-            calcs
+            functions
                 .Define("+", argsT2, argExprs => Expression.Add(argExprs[0], argExprs[1]))
                 .Define("-", argsT2, argExprs => Expression.Subtract(argExprs[0], argExprs[1]))
                 .Define("*", argsT2, argExprs => Expression.Multiply(argExprs[0], argExprs[1]))
@@ -194,41 +194,41 @@ namespace MrHotkeys.Linq.LateBinding
 
             var absMethod = GetMathMethod(nameof(Math.Abs), argsT1);
             if (absMethod is not null)
-                calcs.Define("abs", argsT1, argExprs => Expression.Call(null, absMethod, argExprs));
+                functions.Define("abs", argsT1, argExprs => Expression.Call(null, absMethod, argExprs));
             var signMethod = GetMathMethod(nameof(Math.Sign), argsT1);
             if (absMethod is not null)
-                calcs.Define("sign", argsT1, argExprs => Expression.Call(null, signMethod, argExprs));
+                functions.Define("sign", argsT1, argExprs => Expression.Call(null, signMethod, argExprs));
             var roundMethod = GetMathMethod(nameof(Math.Round), argsT1);
             if (roundMethod is not null)
-                calcs.Define("round", argsT1, argExprs => Expression.Call(null, roundMethod, argExprs));
+                functions.Define("round", argsT1, argExprs => Expression.Call(null, roundMethod, argExprs));
             var floorMethod = GetMathMethod(nameof(Math.Floor), argsT1);
             if (floorMethod is not null)
-                calcs.Define("floor", argsT1, argExprs => Expression.Call(null, floorMethod, argExprs));
+                functions.Define("floor", argsT1, argExprs => Expression.Call(null, floorMethod, argExprs));
             var ceilingMethod = GetMathMethod(nameof(Math.Ceiling), argsT1);
             if (ceilingMethod is not null)
-                calcs.Define("ceiling", argsT1, argExprs => Expression.Call(null, ceilingMethod, argExprs));
+                functions.Define("ceiling", argsT1, argExprs => Expression.Call(null, ceilingMethod, argExprs));
 
             var powMethod = GetMathMethod(nameof(Math.Pow), argsT2);
             if (powMethod is not null)
-                calcs.Define("pow", argsT2, argExprs => Expression.Call(null, powMethod, argExprs));
+                functions.Define("pow", argsT2, argExprs => Expression.Call(null, powMethod, argExprs));
             var minMethod = GetMathMethod(nameof(Math.Min), argsT2);
             if (minMethod is not null)
-                calcs.Define("min", argsT2, argExprs => Expression.Call(null, minMethod, argExprs));
+                functions.Define("min", argsT2, argExprs => Expression.Call(null, minMethod, argExprs));
             var maxMethod = GetMathMethod(nameof(Math.Max), argsT2);
             if (maxMethod is not null)
-                calcs.Define("max", argsT2, argExprs => Expression.Call(null, maxMethod, argExprs));
+                functions.Define("max", argsT2, argExprs => Expression.Call(null, maxMethod, argExprs));
             var logMethod = GetMathMethod(nameof(Math.Log), argsT2);
             if (logMethod is not null)
-                calcs.Define("log", argsT2, argExprs => Expression.Call(null, logMethod, argExprs));
+                functions.Define("log", argsT2, argExprs => Expression.Call(null, logMethod, argExprs));
 
             var clampMethod = GetMathMethod(nameof(Math.Clamp), argsT3);
             if (clampMethod is not null)
-                calcs.Define("clamp", argsT3, argExprs => Expression.Call(null, clampMethod, argExprs));
+                functions.Define("clamp", argsT3, argExprs => Expression.Call(null, clampMethod, argExprs));
         }
 
-        public static void InitializeCalculateString(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeStringFunctions(ILateBindingFunctionCollection functions)
         {
-            calcs
+            functions
                 .Define("==", (string left, string right) => left == right)
                 .Define("!=", (string left, string right) => left != right)
                 .Define("length", (string str) => str.Length)
@@ -248,9 +248,9 @@ namespace MrHotkeys.Linq.LateBinding
                 .Define("lower", (string str) => str.ToLower());
         }
 
-        public static void InitializeCalculateEnumerable(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeEnumerableFunctions(ILateBindingFunctionCollection functions)
         {
-            calcs
+            functions
                 .Define("contains", new[] { typeof(IEnumerable), typeof(object) }, context =>
                     {
                         var enumerableExpr = context.BuildArgument(0);
@@ -289,9 +289,9 @@ namespace MrHotkeys.Linq.LateBinding
                     });
         }
 
-        public static void InitializeCalculateBool(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeBoolFunctions(ILateBindingFunctionCollection functions)
         {
-            calcs
+            functions
                 .Define("!", (bool b) => !b)
                 .Define("==", (bool left, bool right) => left == right)
                 .Define("!=", (bool left, bool right) => left != right)
@@ -300,9 +300,9 @@ namespace MrHotkeys.Linq.LateBinding
                 .Define("xor", (bool left, bool right) => left ^ right);
         }
 
-        public static void InitializeCalculateDateTime(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeDateTimeFunctions(ILateBindingFunctionCollection functions)
         {
-            calcs
+            functions
                 .Define("now", () => DateTime.Now)
                 .Define("==", (DateTime left, DateTime right) => left == right)
                 .Define("!=", (DateTime left, DateTime right) => left != right)
@@ -341,13 +341,13 @@ namespace MrHotkeys.Linq.LateBinding
             return months * sign;
         }
 
-        public sealed class CalculateMethodsEventArgs : EventArgs
+        public sealed class FunctionsEventArgs : EventArgs
         {
-            public ILateBindingCalculateBuilderCollection CalculateMethods { get; }
+            public ILateBindingFunctionCollection Functions { get; }
 
-            public CalculateMethodsEventArgs(ILateBindingCalculateBuilderCollection calculateMethods)
+            public FunctionsEventArgs(ILateBindingFunctionCollection functions)
             {
-                CalculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
+                Functions = functions ?? throw new ArgumentNullException(nameof(functions));
             }
         }
 

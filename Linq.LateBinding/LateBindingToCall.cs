@@ -5,15 +5,15 @@ using System.Linq;
 
 namespace MrHotkeys.Linq.LateBinding
 {
-    public sealed class LateBindingToCalculate : ILateBindingToCalculate
+    public sealed class LateBindingToCall : ILateBindingToCall
     {
-        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Calculate;
+        public LateBindingForm Form => LateBindingForm.Call;
 
         public string Method { get; }
 
         public IReadOnlyList<ILateBinding> Arguments { get; }
 
-        public LateBindingToCalculate(string method, IEnumerable<ILateBinding> arguments)
+        public LateBindingToCall(string method, IEnumerable<ILateBinding> arguments)
         {
             Method = method ?? throw new ArgumentNullException(nameof(method));
 

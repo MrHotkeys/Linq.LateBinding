@@ -15,12 +15,12 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
 
         private Dictionary<MemberInfo, MemberOverrideDefinition> MemberOverrides { get; set; } = new Dictionary<MemberInfo, MemberOverrideDefinition>();
 
-        private ILateBindingCalculateBuilderCollection CalculateMethods { get; }
+        private ILateBindingFunctionCollection Functions { get; }
 
-        public LateBindingExpressionTreeBuilder(ILogger<LateBindingExpressionTreeBuilder> logger, ILateBindingCalculateBuilderCollection calculateMethods)
+        public LateBindingExpressionTreeBuilder(ILogger<LateBindingExpressionTreeBuilder> logger, ILateBindingFunctionCollection functions)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            CalculateMethods = calculateMethods ?? throw new ArgumentNullException(nameof(calculateMethods));
+            Functions = functions ?? throw new ArgumentNullException(nameof(functions));
         }
 
         public LateBindingExpressionTreeBuilder DefineMemberOverride(MemberInfo member, Func<Expression, Expression> buildOverrideFunc, bool onlyOnDirect)
@@ -66,58 +66,58 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return this;
         }
 
-        public Expression Build(Expression targetExpr, ILateBinding lateBinding)
+        public Expression Build(Expression targetExpr, ILateBinding bind)
         {
             if (targetExpr is null)
                 throw new ArgumentNullException(nameof(targetExpr));
-            if (lateBinding is null)
-                throw new ArgumentNullException(nameof(lateBinding));
+            if (bind is null)
+                throw new ArgumentNullException(nameof(bind));
 
-            if (!TryBuildWithOptionalType(targetExpr, lateBinding, null, out var expr))
+            if (!TryBuildWithOptionalType(targetExpr, bind, null, out var expr))
                 throw new InvalidOperationException();
 
             return expr;
         }
 
-        public Expression BuildAs(Expression targetExpr, ILateBinding lateBind, Type type)
+        public Expression BuildAs(Expression targetExpr, ILateBinding bind, Type type)
         {
             if (targetExpr is null)
                 throw new ArgumentNullException(nameof(targetExpr));
-            if (lateBind is null)
-                throw new ArgumentNullException(nameof(lateBind));
+            if (bind is null)
+                throw new ArgumentNullException(nameof(bind));
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
-            if (!TryBuildWithOptionalType(targetExpr, lateBind, type, out var expr))
+            if (!TryBuildWithOptionalType(targetExpr, bind, type, out var expr))
                 throw new InvalidOperationException();
 
             return expr;
         }
 
-        public bool TryBuildAs(Expression targetExpr, ILateBinding lateBind,
+        public bool TryBuildAs(Expression targetExpr, ILateBinding bind,
             Type type, [NotNullWhen(true)] out Expression? resultExpr)
         {
             if (targetExpr is null)
                 throw new ArgumentNullException(nameof(targetExpr));
-            if (lateBind is null)
-                throw new ArgumentNullException(nameof(lateBind));
+            if (bind is null)
+                throw new ArgumentNullException(nameof(bind));
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
-            return TryBuildWithOptionalType(targetExpr, lateBind, type, out resultExpr);
+            return TryBuildWithOptionalType(targetExpr, bind, type, out resultExpr);
         }
 
-        private bool TryBuildWithOptionalType(Expression targetExpr, ILateBinding lateBind,
+        private bool TryBuildWithOptionalType(Expression targetExpr, ILateBinding bind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
-            switch (lateBind.ExpressionType)
+            switch (bind.Form)
             {
-                case LateBindingExpressionType.Constant when lateBind is ILateBindingToConstant constantLateBind:
-                    return TryBuildConstantExpression(targetExpr, constantLateBind, type, out resultExpr);
-                case LateBindingExpressionType.Field when lateBind is ILateBindingToField fieldLateBind:
-                    return TryBuildFieldExpression(targetExpr, fieldLateBind, type, out resultExpr);
-                case LateBindingExpressionType.Calculate when lateBind is ILateBindingToCalculate calculateLateBind:
-                    return TryBuildCalculateExpression(targetExpr, calculateLateBind, type, out resultExpr);
+                case LateBindingForm.Const when bind is ILateBindingToConstant constantBind:
+                    return TryBuildConstantExpression(targetExpr, constantBind, type, out resultExpr);
+                case LateBindingForm.Entity when bind is ILateBindingToEntity entityBind:
+                    return TryBuildEntityExpression(targetExpr, entityBind, type, out resultExpr);
+                case LateBindingForm.Call when bind is ILateBindingToCall callBind:
+                    return TryBuildCallExpression(targetExpr, callBind, type, out resultExpr);
                 default:
                     throw new InvalidOperationException();
             }
@@ -142,18 +142,18 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             }
         }
 
-        private bool TryBuildConstantExpression(Expression targetExpr, ILateBindingToConstant constantLateBind,
+        private bool TryBuildConstantExpression(Expression targetExpr, ILateBindingToConstant constantBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
             if (type is null)
             {
-                var value = constantLateBind.GetValue();
+                var value = constantBind.GetValue();
                 resultExpr = Expression.Constant(value);
                 return true;
             }
             else
             {
-                if (constantLateBind.TryGetValueAs(type, out var value))
+                if (constantBind.TryGetValueAs(type, out var value))
                 {
                     resultExpr = Expression.Constant(value, type); // Need to explicitly specify type in case it's null
                     return true;
@@ -166,10 +166,10 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             }
         }
 
-        private bool TryBuildFieldExpression(Expression targetExpr, ILateBindingToField fieldLateBind,
+        private bool TryBuildEntityExpression(Expression targetExpr, ILateBindingToEntity entityBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
-            var split = fieldLateBind
+            var split = entityBind
                 .Field
                 .Split(".");
             var currentExpr = targetExpr;
@@ -196,19 +196,19 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             return TryBuildConvertIfNeeded(currentExpr, type, out resultExpr);
         }
 
-        private bool TryBuildCalculateExpression(Expression targetExpr, ILateBindingToCalculate calculateLateBind,
+        private bool TryBuildCallExpression(Expression targetExpr, ILateBindingToCall callBind,
             Type? type, [NotNullWhen(true)] out Expression? resultExpr)
         {
-            var context = new BuildContext(this, targetExpr, calculateLateBind);
-            var builders = CalculateMethods.GetBuilders(calculateLateBind.Method);
-            var parameterExprs = new Expression[calculateLateBind.Arguments.Count];
+            var context = new BuildContext(this, targetExpr, callBind);
+            var builders = Functions.GetBuilders(callBind.Method);
+            var parameterExprs = new Expression[callBind.Arguments.Count];
             foreach (var builder in builders)
             {
-                var calculateExpr = builder.Build(context);
-                if (calculateExpr is null)
+                var callExpr = builder.Build(context);
+                if (callExpr is null)
                     continue;
 
-                if (!TryBuildConvertIfNeeded(calculateExpr, type, out resultExpr))
+                if (!TryBuildConvertIfNeeded(callExpr, type, out resultExpr))
                     continue;
 
                 // If we made it this far, we were successful
@@ -238,19 +238,19 @@ namespace MrHotkeys.Linq.LateBinding.Expressions
             public Expression BuildOverride(Expression expr) => BuildOverrideFunc(expr);
         }
 
-        private sealed class BuildContext : ILateBindingCalculateBuilderContext
+        private sealed class BuildContext : ILateBindingCallBuilderContext
         {
             public ILateBindingExpressionTreeBuilder Builder { get; }
 
             public Expression TargetExpr { get; }
 
-            public ILateBindingToCalculate CalculateLateBind { get; }
+            public ILateBindingToCall Call { get; }
 
-            public BuildContext(ILateBindingExpressionTreeBuilder builder, Expression targetExpr, ILateBindingToCalculate calculateLateBind)
+            public BuildContext(ILateBindingExpressionTreeBuilder builder, Expression targetExpr, ILateBindingToCall call)
             {
                 Builder = builder ?? throw new ArgumentNullException(nameof(builder));
                 TargetExpr = targetExpr ?? throw new ArgumentNullException(nameof(targetExpr));
-                CalculateLateBind = calculateLateBind ?? throw new ArgumentNullException(nameof(calculateLateBind));
+                Call = call ?? throw new ArgumentNullException(nameof(call));
             }
         }
     }

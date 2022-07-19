@@ -2,6 +2,6 @@ namespace MrHotkeys.Linq.LateBinding
 {
     public interface ILateBinding
     {
-        public LateBindingExpressionType ExpressionType { get; }
+        public LateBindingForm Form { get; }
     }
 }

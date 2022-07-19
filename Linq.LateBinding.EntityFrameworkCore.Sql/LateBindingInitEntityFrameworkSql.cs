@@ -9,25 +9,25 @@ namespace MrHotkeys.Linq.LateBinding.EntityFramework.Sql
     {
         public static void AddToStatic()
         {
-            LateBindingInit.DefaultCalculateMethodsConstructing += (sender, args) => InitializeCalculate(args.CalculateMethods);
+            LateBindingInit.DefaultFunctionsConstructing += (sender, args) => InitializeFunctions(args.Functions);
         }
 
-        public static void InitializeCalculate(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeFunctions(ILateBindingFunctionCollection functions)
         {
-            InitializeCalculateString(calcs);
+            InitializeStringFunctions(functions);
 
-            InitializeCalculateDateTime(calcs);
+            InitializeDateTimeFunctions(functions);
         }
 
-        public static void InitializeCalculateString(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeStringFunctions(ILateBindingFunctionCollection functions)
         {
-            calcs
+            functions
                 .Define("like", (string str, string pattern) => EF.Functions.Like(str, pattern));
         }
 
-        public static void InitializeCalculateDateTime(ILateBindingCalculateBuilderCollection calcs)
+        public static void InitializeDateTimeFunctions(ILateBindingFunctionCollection functions)
         {
-            calcs
+            functions
                 .Define("diff_milliseconds", (DateTime left, DateTime right) => EF.Functions.DateDiffMillisecond(right, left))
                 .Define("diff_seconds", (DateTime left, DateTime right) => EF.Functions.DateDiffSecond(right, left))
                 .Define("diff_minutes", (DateTime left, DateTime right) => EF.Functions.DateDiffMinute(right, left))

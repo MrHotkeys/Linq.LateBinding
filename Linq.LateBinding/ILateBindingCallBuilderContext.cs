@@ -6,21 +6,21 @@ using MrHotkeys.Linq.LateBinding.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding
 {
-    public interface ILateBindingCalculateBuilderContext
+    public interface ILateBindingCallBuilderContext
     {
         public ILateBindingExpressionTreeBuilder Builder { get; }
 
         public Expression TargetExpr { get; }
 
-        public ILateBindingToCalculate CalculateLateBind { get; }
+        public ILateBindingToCall Call { get; }
 
         public Expression BuildArgument(int argumentIndex) =>
-            Builder.Build(TargetExpr, CalculateLateBind.Arguments[argumentIndex]);
+            Builder.Build(TargetExpr, Call.Arguments[argumentIndex]);
 
         public Expression BuildArgumentAs(int argumentIndex, Type type) =>
-            Builder.BuildAs(TargetExpr, CalculateLateBind.Arguments[argumentIndex], type);
+            Builder.BuildAs(TargetExpr, Call.Arguments[argumentIndex], type);
 
         public bool TryBuildArgumentAs(int argumentIndex, Type type, [NotNullWhen(true)] out Expression? expression) =>
-            Builder.TryBuildAs(TargetExpr, CalculateLateBind.Arguments[argumentIndex], type, out expression);
+            Builder.TryBuildAs(TargetExpr, Call.Arguments[argumentIndex], type, out expression);
     }
 }

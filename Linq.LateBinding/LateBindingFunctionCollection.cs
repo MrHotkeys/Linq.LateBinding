@@ -9,26 +9,26 @@ using MrHotkeys.Linq.LateBinding.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding
 {
-    public sealed class LateBindingCalculateBuilderCollection : ILateBindingCalculateBuilderCollection
+    public sealed class LateBindingFunctionCollection : ILateBindingFunctionCollection
     {
         private ILogger Logger { get; }
 
-        private Dictionary<string, List<ILateBindingCalculateMethodBuilder>> Builders =
-            new Dictionary<string, List<ILateBindingCalculateMethodBuilder>>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, List<ILateBindingCallBuilder>> Builders =
+            new Dictionary<string, List<ILateBindingCallBuilder>>(StringComparer.OrdinalIgnoreCase);
 
-        public LateBindingCalculateBuilderCollection(ILogger<LateBindingCalculateBuilderCollection> logger)
+        public LateBindingFunctionCollection(ILogger<LateBindingFunctionCollection> logger)
         {
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public ILateBindingCalculateBuilderCollection Add(ILateBindingCalculateMethodBuilder builder)
+        public ILateBindingFunctionCollection Add(ILateBindingCallBuilder builder)
         {
             if (builder is null)
                 throw new ArgumentNullException(nameof(builder));
 
             if (!Builders.TryGetValue(builder.Method, out var list))
             {
-                list = new List<ILateBindingCalculateMethodBuilder>();
+                list = new List<ILateBindingCallBuilder>();
                 Builders[builder.Method] = list;
             }
 
@@ -37,7 +37,7 @@ namespace MrHotkeys.Linq.LateBinding
                 if (list[i].ParameterTypes.SequenceEqual(builder.ParameterTypes))
                 {
                     if (Logger.IsEnabled(LogLevel.Debug))
-                        Logger.LogDebug("Overwriting builder for calculate method {method}({parameterTypes}).", builder.Method, GetParameterListStrign(builder.ParameterTypes));
+                        Logger.LogDebug("Overwriting builder for function {method}({parameterTypes}).", builder.Method, GetParameterListStrign(builder.ParameterTypes));
 
                     list.RemoveAt(i);
 
@@ -50,7 +50,7 @@ namespace MrHotkeys.Linq.LateBinding
             return this;
         }
 
-        public ILateBindingCalculateBuilderCollection Remove(ILateBindingCalculateMethodBuilder builder)
+        public ILateBindingFunctionCollection Remove(ILateBindingCallBuilder builder)
         {
             if (builder is null)
                 throw new ArgumentNullException(nameof(builder));
@@ -61,7 +61,7 @@ namespace MrHotkeys.Linq.LateBinding
             return this;
         }
 
-        public ILateBindingCalculateBuilderCollection Define(string method, Type[] parameterTypes, Func<IReadOnlyList<Expression>, Expression?> callback)
+        public ILateBindingFunctionCollection Define(string method, Type[] parameterTypes, Func<IReadOnlyList<Expression>, Expression?> callback)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -72,27 +72,27 @@ namespace MrHotkeys.Linq.LateBinding
             if (parameterTypes.Contains(null))
                 throw new ArgumentException("Cannot contain null!", nameof(parameterTypes));
 
-            Expression? CallbackFromLateBind(ILateBindingCalculateBuilderContext context)
+            Expression? CallbackFromLateBind(ILateBindingCallBuilderContext context)
             {
-                if (context.CalculateLateBind.Arguments.Count != parameterTypes.Length)
+                if (context.Call.Arguments.Count != parameterTypes.Length)
                 {
                     if (Logger.IsEnabled(LogLevel.Trace))
                     {
-                        Logger.LogTrace("Soft-failing out of builder for calculate method {method}({parameterTypes}): argument count mismatch (expected {expected}, got {actual}).",
-                            method, GetParameterListStrign(parameterTypes), parameterTypes.Length, context.CalculateLateBind.Arguments.Count);
+                        Logger.LogTrace("Soft-failing out of builder for function {method}({parameterTypes}): argument count mismatch (expected {expected}, got {actual}).",
+                            method, GetParameterListStrign(parameterTypes), parameterTypes.Length, context.Call.Arguments.Count);
                     }
 
                     return null;
                 }
 
-                var argExprs = new Expression[context.CalculateLateBind.Arguments.Count];
-                for (var i = 0; i < context.CalculateLateBind.Arguments.Count; i++)
+                var argExprs = new Expression[context.Call.Arguments.Count];
+                for (var i = 0; i < context.Call.Arguments.Count; i++)
                 {
                     if (!context.TryBuildArgumentAs(i, parameterTypes[i], out var argExpr))
                     {
                         if (Logger.IsEnabled(LogLevel.Trace))
                         {
-                            Logger.LogTrace("Soft-failing out of builder for calculate method {method}({parameterTypes}): argument type mismatch (expected {expected}).",
+                            Logger.LogTrace("Soft-failing out of builder for function {method}({parameterTypes}): argument type mismatch (expected {expected}).",
                                 method, GetParameterListStrign(parameterTypes), parameterTypes[i]);
                         }
 
@@ -105,11 +105,11 @@ namespace MrHotkeys.Linq.LateBinding
                 return callback(argExprs);
             }
 
-            var builder = new LateBindingCalculateBuilderFromCallback(method, parameterTypes, CallbackFromLateBind);
+            var builder = new LateBindingCallBuilderFromCallback(method, parameterTypes, CallbackFromLateBind);
             return Add(builder);
         }
 
-        public ILateBindingCalculateBuilderCollection Define(string method, Type[] parameterTypes, Func<ILateBindingCalculateBuilderContext, Expression?> callback)
+        public ILateBindingFunctionCollection Define(string method, Type[] parameterTypes, Func<ILateBindingCallBuilderContext, Expression?> callback)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -120,19 +120,19 @@ namespace MrHotkeys.Linq.LateBinding
             if (parameterTypes.Contains(null))
                 throw new ArgumentException("Cannot contain null!", nameof(parameterTypes));
 
-            Expression? CallbackWithGuard(ILateBindingCalculateBuilderContext context)
+            Expression? CallbackWithGuard(ILateBindingCallBuilderContext context)
             {
-                if (context.CalculateLateBind.Arguments.Count != parameterTypes.Length)
+                if (context.Call.Arguments.Count != parameterTypes.Length)
                     return null; // TODO: Log a trace/debug
 
                 return callback(context);
             }
 
-            var builder = new LateBindingCalculateBuilderFromCallback(method, parameterTypes, CallbackWithGuard);
+            var builder = new LateBindingCallBuilderFromCallback(method, parameterTypes, CallbackWithGuard);
             return Add(builder);
         }
 
-        public ILateBindingCalculateBuilderCollection Define<TOut>(string method, Expression<Func<TOut>> builderExpr)
+        public ILateBindingFunctionCollection Define<TOut>(string method, Expression<Func<TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -142,7 +142,7 @@ namespace MrHotkeys.Linq.LateBinding
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public ILateBindingCalculateBuilderCollection Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
+        public ILateBindingFunctionCollection Define<T, TOut>(string method, Expression<Func<T, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -152,7 +152,7 @@ namespace MrHotkeys.Linq.LateBinding
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public ILateBindingCalculateBuilderCollection Define<T0, T1, TOut>(string method, Expression<Func<T0, T1, TOut>> builderExpr)
+        public ILateBindingFunctionCollection Define<T0, T1, TOut>(string method, Expression<Func<T0, T1, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -162,7 +162,7 @@ namespace MrHotkeys.Linq.LateBinding
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public ILateBindingCalculateBuilderCollection Define<T0, T1, T2, TOut>(string method, Expression<Func<T0, T1, T2, TOut>> builderExpr)
+        public ILateBindingFunctionCollection Define<T0, T1, T2, TOut>(string method, Expression<Func<T0, T1, T2, TOut>> builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -172,7 +172,7 @@ namespace MrHotkeys.Linq.LateBinding
             return Define(method, builderExpr as LambdaExpression);
         }
 
-        public ILateBindingCalculateBuilderCollection Define(string method, LambdaExpression builderExpr)
+        public ILateBindingFunctionCollection Define(string method, LambdaExpression builderExpr)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -197,7 +197,7 @@ namespace MrHotkeys.Linq.LateBinding
             return Define(method, parameterTypes, Callback);
         }
 
-        public ILateBindingCalculateBuilderCollection Undefine(string method)
+        public ILateBindingFunctionCollection Undefine(string method)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -210,7 +210,7 @@ namespace MrHotkeys.Linq.LateBinding
             return this;
         }
 
-        public ILateBindingCalculateBuilderCollection Undefine(string method, Type[] parameterTypes)
+        public ILateBindingFunctionCollection Undefine(string method, Type[] parameterTypes)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -238,11 +238,11 @@ namespace MrHotkeys.Linq.LateBinding
             return this;
         }
 
-        public IReadOnlyCollection<ILateBindingCalculateMethodBuilder> GetBuilders(string method)
+        public IReadOnlyCollection<ILateBindingCallBuilder> GetBuilders(string method)
         {
             return Builders.TryGetValue(method, out var list) ?
                 list :
-                Array.Empty<ILateBindingCalculateMethodBuilder>();
+                Array.Empty<ILateBindingCallBuilder>();
         }
 
         private string GetParameterListStrign(IReadOnlyList<Type> types) =>

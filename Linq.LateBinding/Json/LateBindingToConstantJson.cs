@@ -6,7 +6,7 @@ namespace MrHotkeys.Linq.LateBinding.Json
 {
     public sealed class LateBindingToConstantJson : ILateBindingToConstant
     {
-        public LateBindingExpressionType ExpressionType => LateBindingExpressionType.Constant;
+        public LateBindingForm Form => LateBindingForm.Const;
 
         private JsonElement Json { get; }
 

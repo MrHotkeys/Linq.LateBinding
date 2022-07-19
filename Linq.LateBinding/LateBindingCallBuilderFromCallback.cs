@@ -6,15 +6,15 @@ using System.Linq.Expressions;
 
 namespace MrHotkeys.Linq.LateBinding
 {
-    public sealed class LateBindingCalculateBuilderFromCallback : ILateBindingCalculateMethodBuilder
+    public sealed class LateBindingCallBuilderFromCallback : ILateBindingCallBuilder
     {
         public string Method { get; }
 
         public IReadOnlyList<Type> ParameterTypes { get; }
 
-        private Func<ILateBindingCalculateBuilderContext, Expression?> Callback { get; }
+        private Func<ILateBindingCallBuilderContext, Expression?> Callback { get; }
 
-        public LateBindingCalculateBuilderFromCallback(string method, IList<Type> parameterTypes, Func<ILateBindingCalculateBuilderContext, Expression?> callback)
+        public LateBindingCallBuilderFromCallback(string method, IList<Type> parameterTypes, Func<ILateBindingCallBuilderContext, Expression?> callback)
         {
             Method = method ?? throw new ArgumentNullException(nameof(method));
             Callback = callback ?? throw new ArgumentNullException(nameof(callback));
@@ -23,7 +23,7 @@ namespace MrHotkeys.Linq.LateBinding
                 throw new ArgumentNullException(nameof(parameterTypes));
         }
 
-        public Expression? Build(ILateBindingCalculateBuilderContext context)
+        public Expression? Build(ILateBindingCallBuilderContext context)
         {
             if (context is null)
                 throw new ArgumentNullException(nameof(context));
