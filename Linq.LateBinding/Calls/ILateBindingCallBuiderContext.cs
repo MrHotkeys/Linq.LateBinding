@@ -2,9 +2,10 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
+using MrHotkeys.Linq.LateBinding.Binds;
 using MrHotkeys.Linq.LateBinding.Expressions;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Calls
 {
     public interface ILateBindingCallBuilderContext
     {

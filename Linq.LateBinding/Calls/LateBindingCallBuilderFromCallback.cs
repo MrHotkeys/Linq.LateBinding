@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Calls
 {
     public sealed class LateBindingCallBuilderFromCallback : ILateBindingCallBuilder
     {

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
+using MrHotkeys.Linq.LateBinding.Utility;
+
 namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public abstract class DtoDictionaryBase : IDictionary<string, object?>

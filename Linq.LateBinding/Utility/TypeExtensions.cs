@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Utility
 {
     internal static class TypeExtensions
     {

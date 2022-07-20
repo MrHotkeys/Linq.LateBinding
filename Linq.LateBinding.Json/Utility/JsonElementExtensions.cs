@@ -4,7 +4,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace MrHotkeys.Linq.LateBinding.Json
+namespace MrHotkeys.Linq.LateBinding.Json.Utility
 {
     internal static class JsonElementExtensions
     {

@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Utility
 {
     public sealed class ReadOnlySetWrapper<T> : IReadOnlyCollection<T>, ICollection<T>
     {

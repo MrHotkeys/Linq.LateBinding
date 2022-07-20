@@ -9,13 +9,28 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
+using MrHotkeys.Linq.LateBinding.Calls;
 using MrHotkeys.Linq.LateBinding.Dto;
 using MrHotkeys.Linq.LateBinding.Expressions;
+using MrHotkeys.Linq.LateBinding.Queries;
+using MrHotkeys.Linq.LateBinding.Utility;
 
 namespace MrHotkeys.Linq.LateBinding
 {
-    public static class LateBindingInit
+    public static class LateBinding
     {
+        public static QueryableWithLateBinding<T> WithLateBinding<T>(this IQueryable<T> entities) =>
+            new QueryableWithLateBinding<T>(entities, LateBinding.DtoTypeGenerator, LateBinding.ExpressionTreeBuilder);
+        public static QueryableWithLateBinding<object?> WithLateBinding<T>(this IQueryable<T> entities, ILateBindingQuery query) =>
+            new QueryableWithLateBinding<T>(entities, LateBinding.DtoTypeGenerator, LateBinding.ExpressionTreeBuilder)
+                .Query(query);
+
+        public static QueryableWithLateBinding<T> AsQueryableWithLateBinding<T>(this IEnumerable<T> entities) =>
+            new QueryableWithLateBinding<T>(entities.AsQueryable(), LateBinding.DtoTypeGenerator, LateBinding.ExpressionTreeBuilder);
+        public static QueryableWithLateBinding<object?> AsQueryableWithLateBinding<T>(this IEnumerable<T> entities, ILateBindingQuery query) =>
+            new QueryableWithLateBinding<T>(entities.AsQueryable(), LateBinding.DtoTypeGenerator, LateBinding.ExpressionTreeBuilder)
+                .Query(query);
+
         private static IServiceProvider? _serviceProvider;
         public static IServiceProvider ServiceProvider
         {
@@ -126,7 +141,7 @@ namespace MrHotkeys.Linq.LateBinding
 
         public static event EventHandler<FunctionsEventArgs>? DefaultFunctionsConstructing;
 
-        static LateBindingInit()
+        static LateBinding()
         {
             DefaultFunctionsConstructing += (sender, args) => InitializeFunctions(args.Functions);
         }

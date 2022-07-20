@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Binds
 {
     public sealed class LateBindingToCall : ILateBindingToCall
     {

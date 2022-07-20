@@ -1,6 +1,8 @@
 using System;
 
-namespace MrHotkeys.Linq.LateBinding
+using MrHotkeys.Linq.LateBinding.Binds;
+
+namespace MrHotkeys.Linq.LateBinding.Queries
 {
     public sealed class LateBindingOrderBy
     {

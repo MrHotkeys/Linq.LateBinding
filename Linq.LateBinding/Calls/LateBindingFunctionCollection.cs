@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 using MrHotkeys.Linq.LateBinding.Expressions;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Calls
 {
     public sealed class LateBindingFunctionCollection : ILateBindingFunctionCollection
     {

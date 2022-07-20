@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
+using MrHotkeys.Linq.LateBinding.Utility;
+
 namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class DtoTypeInfo

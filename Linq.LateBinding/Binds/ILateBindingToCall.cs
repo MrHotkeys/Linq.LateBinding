@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Binds
 {
     public interface ILateBindingToCall : ILateBinding
     {

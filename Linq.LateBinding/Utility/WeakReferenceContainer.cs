@@ -1,6 +1,6 @@
 using System;
 
-namespace MrHotkeys.Linq.LateBinding.Dto
+namespace MrHotkeys.Linq.LateBinding.Utility
 {
     internal sealed class WeakReferenceContainer<T>
     {

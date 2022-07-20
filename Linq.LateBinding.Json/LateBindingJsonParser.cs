@@ -3,6 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
+using MrHotkeys.Linq.LateBinding.Binds;
+using MrHotkeys.Linq.LateBinding.Json.Binds;
+using MrHotkeys.Linq.LateBinding.Json.Queries;
+using MrHotkeys.Linq.LateBinding.Json.Utility;
+using MrHotkeys.Linq.LateBinding.Queries;
+
 namespace MrHotkeys.Linq.LateBinding.Json
 {
     public sealed class LateBindingJsonParser

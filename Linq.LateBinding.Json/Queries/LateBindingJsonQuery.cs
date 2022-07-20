@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 
-using MrHotkeys.Linq.LateBinding.Expressions;
+using MrHotkeys.Linq.LateBinding.Binds;
+using MrHotkeys.Linq.LateBinding.Queries;
 
-namespace MrHotkeys.Linq.LateBinding.Json
+namespace MrHotkeys.Linq.LateBinding.Json.Queries
 {
     public sealed class JsonQuery : ILateBindingQuery
     {

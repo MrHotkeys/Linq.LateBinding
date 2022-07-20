@@ -8,6 +8,8 @@ using System.Reflection.Emit;
 
 using Microsoft.Extensions.Logging;
 
+using MrHotkeys.Linq.LateBinding.Utility;
+
 namespace MrHotkeys.Linq.LateBinding.Dto
 {
     public sealed class DtoTypeGenerator : IDtoTypeGenerator

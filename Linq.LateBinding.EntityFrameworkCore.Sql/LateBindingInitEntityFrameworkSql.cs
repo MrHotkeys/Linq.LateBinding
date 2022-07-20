@@ -3,13 +3,15 @@ using System.Linq.Expressions;
 
 using Microsoft.EntityFrameworkCore;
 
+using MrHotkeys.Linq.LateBinding.Calls;
+
 namespace MrHotkeys.Linq.LateBinding.EntityFramework.Sql
 {
     public static class LateBindingInitEntityFrameworkSql
     {
         public static void AddToStatic()
         {
-            LateBindingInit.DefaultFunctionsConstructing += (sender, args) => InitializeFunctions(args.Functions);
+            LateBinding.DefaultFunctionsConstructing += (sender, args) => InitializeFunctions(args.Functions);
         }
 
         public static void InitializeFunctions(ILateBindingFunctionCollection functions)

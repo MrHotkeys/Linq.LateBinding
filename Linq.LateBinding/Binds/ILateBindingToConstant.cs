@@ -1,6 +1,6 @@
 using System;
 
-namespace MrHotkeys.Linq.LateBinding
+namespace MrHotkeys.Linq.LateBinding.Binds
 {
     public interface ILateBindingToConstant : ILateBinding
     {

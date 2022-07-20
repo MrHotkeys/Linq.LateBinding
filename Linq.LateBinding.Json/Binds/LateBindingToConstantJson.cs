@@ -2,7 +2,11 @@ using System;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace MrHotkeys.Linq.LateBinding.Json
+using MrHotkeys.Linq.LateBinding.Binds;
+using MrHotkeys.Linq.LateBinding.Utility;
+using MrHotkeys.Linq.LateBinding.Json.Utility;
+
+namespace MrHotkeys.Linq.LateBinding.Json.Binds
 {
     public sealed class LateBindingToConstantJson : ILateBindingToConstant
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace MrHotkeys.Linq.LateBinding.Dto
+namespace MrHotkeys.Linq.LateBinding.Utility
 {
     internal static class EmitHelpers
     {

@@ -5,8 +5,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using MrHotkeys.Linq.LateBinding.Binds;
 using MrHotkeys.Linq.LateBinding.Dto;
 using MrHotkeys.Linq.LateBinding.Expressions;
+using MrHotkeys.Linq.LateBinding.Queries;
+using MrHotkeys.Linq.LateBinding.Utility;
 
 namespace MrHotkeys.Linq.LateBinding
 {
